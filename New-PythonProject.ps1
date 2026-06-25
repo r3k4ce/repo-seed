@@ -455,6 +455,11 @@ Run tests:
 
 For new features and bug fixes, write or update a focused test first, run that test, then run the full check.
 
+## Docs
+
+Living project documentation lives in docs/.
+Start with docs/README.md for the docs convention and docs/project-log.md for the current project memory.
+
 Run type checking:
 
     uv run pyright
@@ -480,6 +485,44 @@ On macOS/Linux with PowerShell installed:
     pwsh ./scripts/fix.ps1
 "@
 
+$Today = Get-Date -Format "yyyy-MM-dd"
+
+Write-TextFile -Path (Join-Path "docs" "README.md") -Content @'
+# Project Docs
+
+This folder holds living documentation for the project. Keep it aligned with the codebase as the project changes.
+
+Use these docs to capture current behavior, decisions, workflows, dependencies, verification status, and follow-ups that future maintainers or agents should know.
+
+## Files
+
+- `project-log.md`: Reverse chronological project memory and changelog.
+
+When a task changes code, behavior, dependencies, workflow, project structure, or an important decision, update the relevant docs before finishing. If no docs update is needed, say why in the final handoff.
+'@
+
+Write-TextFile -Path (Join-Path "docs" "project-log.md") -Content @"
+# Project Log
+
+Newest entries first. Keep entries compact and factual.
+
+## $Today - Initial scaffold
+
+- Summary: Created the initial Python project scaffold.
+- Changed areas: Project structure, development tooling, tests, agent instructions, and living docs.
+- Verification: Scaffold generation completed. Run ``.\scripts\check.ps1`` before the first project commit.
+- Follow-ups: Replace this entry's follow-ups as real project work begins.
+
+## Entry template
+
+### YYYY-MM-DD - Short summary
+
+- Summary:
+- Changed areas:
+- Verification:
+- Follow-ups:
+"@
+
 $AgentInstructions = @'
 # Agent Instructions
 
@@ -503,6 +546,12 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 - If meaningful ambiguity remains, ask targeted beginner-friendly questions with concrete options and tradeoffs. Wait to implement until the user answers or explicitly accepts a default.
 - Before edits, restate the bounded scope. For tiny fixes, one terse line is enough; for larger work, include goal, in-scope, out-of-scope, assumptions, and verification.
 - Keep tasks tight. Do not expand into adjacent features, broad refactors, new dependencies, or workflow changes unless the user explicitly includes them.
+
+## Living Docs
+
+- Keep `docs/README.md` and `docs/project-log.md` current with actual project changes.
+- After changes to code, behavior, dependencies, workflows, structure, or important decisions, update the relevant docs before finishing.
+- If no docs update is needed, say so in the final handoff and briefly explain why.
 
 ## Commands
 
