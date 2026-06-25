@@ -492,10 +492,17 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 - Inspect relevant files before editing. Preserve unrelated user changes and stop if they conflict with the task.
 - For behavior changes and bug fixes, write or update a focused test first and watch it fail for the expected reason. Docs, comments, and simple config-only edits may skip the red step.
 - Make the smallest practical change. Do not turn starter code into unnecessary architecture.
-- Use Context7 first when available for drift-prone SDKs, dependencies, CI actions, auth, deployment, and security-sensitive behavior. Pair it with web search when useful; use web search alone if Context7 is unavailable.
+- Use Context7 and web search as described below when current or external facts matter.
 - Verify with the focused test first, then run `.\scripts\check.ps1` when feasible. If a check cannot run, report why.
 - Use `uv add` or `uv add --dev` for dependencies. Keep secrets out of the repo.
-- Report changed behavior, files touched, verification commands/results, skipped checks, and remaining risks.
+- Report changed behavior, files touched, verification commands/results, skipped checks, remaining risks, and a suggested commit message in brief Conventional Commit format.
+
+## Ambiguity and Scope
+
+- Resolve ambiguity before editing: inspect local files first, then use Context7 and/or web search when external facts can narrow the answer. Use Context7 first when available for SDKs, dependencies, CI actions, auth, deployment, and security-sensitive behavior.
+- If meaningful ambiguity remains, ask targeted beginner-friendly questions with concrete options and tradeoffs. Wait to implement until the user answers or explicitly accepts a default.
+- Before edits, restate the bounded scope. For tiny fixes, one terse line is enough; for larger work, include goal, in-scope, out-of-scope, assumptions, and verification.
+- Keep tasks tight. Do not expand into adjacent features, broad refactors, new dependencies, or workflow changes unless the user explicitly includes them.
 
 ## Commands
 
