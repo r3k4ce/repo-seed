@@ -526,6 +526,18 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 - Use `uv add` or `uv add --dev` for dependencies. Keep secrets out of the repo.
 - For meaningful ambiguity, ask a targeted question before editing.
 
+## Git Boundaries
+
+- Do not stage or commit changes. Do not run `git add`, `git commit`, or equivalent staging/commit commands.
+- Read-only Git inspection is allowed, such as `git status` and `git diff`.
+- After the work is done, suggest a Conventional Commit message, but leave staging and committing to the user.
+
+## Communication
+
+- When asking questions, make the decision as easy as possible for a beginner developer.
+- Explain code concepts in plain English when they affect a user decision. For example, describe what a function, variable, or class does in everyday terms before naming it.
+- In final handoffs, keep summaries, skipped checks, and remaining risks clear and beginner-friendly while still being technically accurate.
+
 ## Docs
 
 - Keep `docs/project-log.md` current when code, behavior, dependencies, workflow, structure, or important decisions change.
@@ -542,7 +554,7 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 ## Handoff
 
 Report changed behavior, files touched, verification commands/results, skipped checks, remaining risks,
-and a suggested Conventional Commit message.
+and a suggested Conventional Commit message. Do not stage or commit the changes.
 '@
 
 Write-TextFile -Path "AGENTS.md" -Content ($AgentInstructions.Replace("__PACKAGE_NAME__", $PackageName))
