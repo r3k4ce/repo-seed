@@ -7,9 +7,7 @@ param(
     [string]$TypeMode = "standard",
 
     [switch]$NoGit,
-    [switch]$InstallHooks,
     [switch]$NoInstallHooks,
-    [switch]$GitHubActions,
     [switch]$NoGitHubActions
 )
 
@@ -151,10 +149,7 @@ if ($Python -match "(\d+)\.(\d+)") {
     $RuffTarget = "py$($Matches[1])$($Matches[2])"
 }
 
-Write-Host "Creating Python project: $ProjectName"
-Write-Host "Package name: $PackageName"
-Write-Host "Python version: $Python"
-Write-Host "Type checking mode: $TypeMode"
+Write-Host "Creating Python project: $ProjectName ($PackageName, Python $Python, pyright $TypeMode)"
 
 $initArgs = @(
     "init",
@@ -440,75 +435,35 @@ Write-TextFile -Path "README.md" -Content @"
 
 ## Setup
 
-Install dependencies:
-
     uv sync --dev
 
-Secrets:
+Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
-    Copy .env.example to .env only when real secrets are needed. Never commit .env.
+## Commands
 
-## Common commands
-
-Source code lives in `src/$PackageName/`. Tests live in `tests/`.
-Run the full local check:
+Source code lives in src/$PackageName/. Tests live in tests/.
 
     .\scripts\check.ps1
-
-Auto-fix formatting and safe lint issues, then verify:
-
     .\scripts\fix.ps1
-
-Individual checks:
-
-    uv run pytest
-    uv run pyright
-    uv run ruff check .
-    uv run ruff format .
 
 ## Docs
 
-Project memory lives in `docs/project-memory.yaml` for recent completed changes and verification.
-
-## Cross-platform usage
-
-Windows:
-
-    .\scripts\check.ps1
-    .\scripts\fix.ps1
-
-macOS/Linux with PowerShell:
-
-    pwsh ./scripts/check.ps1
-    pwsh ./scripts/fix.ps1
+Project memory lives in docs/project-memory.yaml.
 "@
 
 $Now = Get-Date
 $TimeUtc = $Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 $TimeLocal = $Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
 
-Write-TextFile -Path (Join-Path "docs" "README.md") -Content @'
-# Project Docs
-
-Keep this folder aligned with real project changes.
-
-## Files
-
-- `project-memory.yaml`: Newest-first project memory for completed changes and verification.
-
-Update docs when code, behavior, dependencies, workflow, structure, or important decisions change.
-If a task needs no docs update, say why in the handoff.
-'@
-
 Write-TextFile -Path (Join-Path "docs" "project-memory.yaml") -Content @"
 entries:
   - time_utc: "$TimeUtc"
     time_local: "$TimeLocal"
-    summary: "Created the initial Python project scaffold."
+    summary: "Created initial scaffold."
     changed:
-      - "Project structure, runtime dotenv support, development tooling, tests, agent instructions, and project memory."
+      - "Initial Python package, tests, checks, CI, hooks, AGENTS.md, and memory file."
     verification:
-      - 'Scaffold generation completed. Run .\scripts\check.ps1 before the first project commit.'
+      - 'Not run yet; run .\scripts\check.ps1 before first commit.'
 "@
 
 $AgentTemplatePath = Join-Path $PSScriptRoot "templates/python-project.AGENTS.md"
@@ -570,13 +525,4 @@ if (-not $NoInstallHooks) {
 }
 
 Write-Host ""
-Write-Host "Done."
-Write-Host "Project: $ProjectName"
-Write-Host ""
-Write-Host "Useful commands:"
-Write-Host "  .\scripts\check.ps1"
-Write-Host "  .\scripts\fix.ps1"
-Write-Host "  uv run pytest"
-Write-Host "  uv run pyright"
-Write-Host "  uv run ruff check ."
-Write-Host "  uv run ruff format ."
+Write-Host "Done. Next: .\scripts\check.ps1"
