@@ -41,8 +41,9 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 
 ## Docs
 
-- Keep `docs/project-log.md` current when code, behavior, dependencies, workflow, structure, or important decisions change.
-- If no docs update is needed, say why in the final handoff. Keep entries compact and useful to the next developer.
+- Keep `docs/project-memory.yaml` current when code, behavior, dependencies, workflow, structure, or important decisions actually change.
+- Add only completed changes. Keep entries compact and machine-readable: `time_utc`, `time_local`, `summary`, `changed`, and `verification`.
+- Do not record proposed work, suggested commit messages, or follow-ups. If no memory update is needed, say why in the final handoff.
 
 ## Commands
 

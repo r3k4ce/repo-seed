@@ -456,8 +456,7 @@ Individual checks:
 
 ## Docs
 
-Project notes live in `docs/`. Start with `docs/project-log.md` for recent decisions,
-verification, and follow-ups.
+Project memory lives in `docs/project-memory.yaml` for recent completed changes and verification.
 
 ## Cross-platform usage
 
@@ -472,7 +471,9 @@ macOS/Linux with PowerShell:
     pwsh ./scripts/fix.ps1
 "@
 
-$Today = Get-Date -Format "yyyy-MM-dd"
+$Now = Get-Date
+$TimeUtc = $Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$TimeLocal = $Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
 
 Write-TextFile -Path (Join-Path "docs" "README.md") -Content @'
 # Project Docs
@@ -481,32 +482,21 @@ Keep this folder aligned with real project changes.
 
 ## Files
 
-- `project-log.md`: Newest-first project memory: changes, decisions, verification, and follow-ups.
+- `project-memory.yaml`: Newest-first project memory for completed changes and verification.
 
 Update docs when code, behavior, dependencies, workflow, structure, or important decisions change.
 If a task needs no docs update, say why in the handoff.
 '@
 
-Write-TextFile -Path (Join-Path "docs" "project-log.md") -Content @"
-# Project Log
-
-Newest entries first. Keep entries compact.
-
-## $Today - Initial scaffold
-
-- Summary: Created the initial Python project scaffold.
-- Changed areas: Project structure, development tooling, tests, agent instructions, and living docs.
-- Verification: Scaffold generation completed. Run ``.\scripts\check.ps1`` before the first project commit.
-- Follow-ups: Replace this entry's follow-ups as real project work begins.
-
-## Entry template
-
-### YYYY-MM-DD - Short summary
-
-- Summary:
-- Changed areas:
-- Verification:
-- Follow-ups:
+Write-TextFile -Path (Join-Path "docs" "project-memory.yaml") -Content @"
+entries:
+  - time_utc: "$TimeUtc"
+    time_local: "$TimeLocal"
+    summary: "Created the initial Python project scaffold."
+    changed:
+      - "Project structure, development tooling, tests, agent instructions, and project memory."
+    verification:
+      - 'Scaffold generation completed. Run .\scripts\check.ps1 before the first project commit.'
 "@
 
 $AgentTemplatePath = Join-Path $PSScriptRoot "templates/python-project.AGENTS.md"
