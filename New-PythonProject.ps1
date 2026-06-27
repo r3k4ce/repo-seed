@@ -180,6 +180,9 @@ $devTools = @(
 Write-Host "Adding dev tooling..."
 Invoke-Checked uv add --dev @devTools
 
+Write-Host "Adding runtime dependencies..."
+Invoke-Checked uv add python-dotenv
+
 New-Item -ItemType Directory -Path "tests" -Force | Out-Null
 
 Write-TextFile -Path (Join-Path (Join-Path "src" $PackageName) "__init__.py") -Content @"
@@ -325,6 +328,7 @@ __pycache__/
 .venv/
 .env
 .env.*
+!.env.example
 
 # Tool caches
 .pytest_cache/
@@ -345,6 +349,10 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+"@
+
+Write-TextFile -Path ".env.example" -Content @"
+# Add required environment variable names here. Never commit real secrets.
 "@
 
 Write-TextFile -Path ".pre-commit-config.yaml" -Content @'
@@ -436,6 +444,10 @@ Install dependencies:
 
     uv sync --dev
 
+Secrets:
+
+    Copy .env.example to .env only when real secrets are needed. Never commit .env.
+
 ## Common commands
 
 Source code lives in `src/$PackageName/`. Tests live in `tests/`.
@@ -494,7 +506,7 @@ entries:
     time_local: "$TimeLocal"
     summary: "Created the initial Python project scaffold."
     changed:
-      - "Project structure, development tooling, tests, agent instructions, and project memory."
+      - "Project structure, runtime dotenv support, development tooling, tests, agent instructions, and project memory."
     verification:
       - 'Scaffold generation completed. Run .\scripts\check.ps1 before the first project commit.'
 "@

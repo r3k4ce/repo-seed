@@ -9,10 +9,13 @@ Source code lives in `src/__PACKAGE_NAME__/`. Tests live in `tests/`.
 - Use `uv`.
 - Keep changes small, test-first, and evidence-based.
 - Make the smallest practical change. Avoid broad refactors, extra dependencies, and new architecture unless the task calls for them.
+- Prefer the standard library and existing project helpers before adding dependencies. Write the fewest lines that preserve correctness, clarity, validation, security, and tests.
+- Do not add speculative abstractions, alternate implementations, or configurability for future needs.
 
 ## Workflow
 
 - Inspect relevant files before editing. Preserve unrelated user changes and stop if they conflict with the task.
+- Prefer `rg`, `fd`, `jq`, and `yq` for fast search and structured inspection when available; otherwise use PowerShell or Python standard library fallbacks.
 - For behavior changes and bug fixes, write or update a focused test first and run it before editing. Docs, comments, and simple config-only edits may skip the red step.
 - Inspect local files first. Use Context7 or web search only when current external facts matter, such as SDKs, documentation, CI actions, auth, deployment, or security-sensitive behavior.
 - Ask before editing when a decision affects behavior, UX, architecture, dependencies, workflow, data, or user expectations. For small local code mechanics, choose the simplest reversible option and mention the assumption in the handoff.
