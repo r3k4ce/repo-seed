@@ -34,12 +34,15 @@ If a skill/tool is unavailable, continue with the closest local workflow. Do not
 * Preserve existing behavior unless the task explicitly changes it.
 * Do not add broad refactors, new architecture, speculative abstractions, alternate implementations, or future configurability.
 * Prefer stdlib and existing project helpers before adding dependencies.
+* Prefer editing existing files. Create new files only when needed for tests, packaging, docs policy, or the requested feature.
 * Keep validation, security, data safety, accessibility, and tests intact.
 * Preserve unrelated user changes. Stop if local changes conflict with the task.
+* If the user asks for a plan, review, opinion, or recommendation, stay read-only unless they explicitly ask for implementation.
+* Finish the requested outcome end to end, including obvious neighboring files and checks needed for the change to actually work.
 
 ## Decision Questions
 
-Ask focused questions only when the answer affects behavior, UX, architecture, dependencies, workflow, data, security, or user expectations.
+Ask focused questions before implementation when the goal, success criteria, UX, data shape, behavior boundary, or completion boundary is unclear.
 
 When asking:
 
@@ -62,8 +65,8 @@ Do not ask about small reversible code mechanics. Choose the simplest option and
 ## Workflow
 
 1. Inspect relevant files.
-2. Clarify only blocking decisions.
-3. For behavior changes and bug fixes, write or update a focused failing test first when practical.
+2. Clarify scope gaps before implementation.
+3. For behavior changes and bug fixes, write or update one focused failing test first unless the change is docs/config-only or no test harness exists.
 4. Implement the smallest correct change.
 5. Run the focused check first.
 6. Run `.\scripts\check.ps1` when feasible.
@@ -104,9 +107,9 @@ Use `uv add` or `uv add --dev` for dependencies.
 
 * Update `README.md` only when setup, commands, usage, config, dependencies, or user-facing behavior changes.
 * Update `.env.example` when new env vars are required. Never create `.env`.
-* Update `docs/project-memory.yaml` for completed code, behavior, dependency, workflow, structure, or decision changes.
+* Update `docs/project-memory.yaml` only after completed implementation for code, behavior, dependency, workflow, structure, or decision changes.
 * Optional docs: `docs/architecture.md`, `docs/decisions.md`, `docs/troubleshooting.md`, only when they reduce future confusion.
-* Do not create docs for obvious code, temporary plans, proposed work, commit messages, or routine details.
+* Do not create docs for obvious code, temporary plans, proposed work, failed attempts, exploratory work, commit messages, or routine details.
 
 Keep `docs/project-memory.yaml` entries compact and machine-readable:
 
@@ -128,7 +131,7 @@ Keep the final handoff compact. Include only relevant sections:
 * Verified: commands run and results.
 * Skipped: checks not run and why.
 * Docs: memory update or why none was needed.
-* Risks: remaining issues or assumptions.
 * Commit: suggested Conventional Commit message.
 
 Prefer 12 lines or fewer. Expand only when failures, risks, migrations, or user decisions require it.
+Do not include broad explanations, future feature ideas, or unrelated cleanup suggestions.
