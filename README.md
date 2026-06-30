@@ -34,10 +34,64 @@ Early but usable. I use this for my own project starts.
 
 
 
-## Quick setup (PowerShell 7)
+## Prerequisites
 
-To run the script from anywhere as `np`, add a small function to your PowerShell 7 profile.
-Use the absolute path to this repository on your machine.
+RepoSeed targets Windows with PowerShell 7+ and uses these tools:
+
+- **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
+- **`npm`** (Node.js 18+) — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
+- **`git`** — used to initialize a repository and install hooks. The script warns and skips git init if it is missing; you can also pass `-NoGit` to skip it explicitly.
+
+## Quick start
+
+The shortest path from an empty folder to a checked, ready-to-commit project:
+
+```powershell
+# 1. Create an empty project folder and enter it
+New-Item -ItemType Directory -Path "C:\Code\my-app" -Force
+Set-Location "C:\Code\my-app"
+
+# 2. Run the scaffolder (use the absolute path to your RepoSeed clone)
+& "C:\Path\To\RepoSeed\new-project.ps1"
+
+# 3. Run the generated checks
+.\scripts\check.ps1
+```
+
+Defaults to the `base` profile. See [Usage](#usage) for `-Profile web`, `-Profile game`, `-Profile desktop`, and other options.
+
+## Usage
+
+Use the script directly from this repository:
+
+```powershell
+.\new-project.ps1
+.\new-project.ps1 -Name my-app
+.\new-project.ps1 -Profile web
+```
+
+Options:
+
+* `-Name`: project name. Defaults to the current directory name.
+* `-Python`: Python version for `uv init`. Defaults to `3.12`.
+* `-TypeMode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
+* `-Profile`: scaffold profile. Valid values are `base`, `desktop`, `web`, and `game`. Defaults to `base`.
+* `-NoGit`: skip git initialization.
+* `-NoInstallHooks`: skip pre-commit and pre-push hook installation.
+* `-NoGitHubActions`: skip GitHub Actions workflow generation.
+
+Profiles:
+
+* `base`: uv-managed Python package.
+* `desktop`: base profile plus PySide6 starter folders and a runnable window.
+* `web`: FastAPI backend plus Vite React TypeScript frontend.
+* `game`: FastAPI backend plus Vite TypeScript frontend with Phaser.
+
+## Optional: PowerShell alias (`np`)
+
+The `np` alias is a convenience for running the scaffolder from any folder without typing the full path. **It is not required** to use RepoSeed — if you only run the script occasionally, the absolute-path call from [Quick start](#quick-start) is enough.
+
+To set up the alias, add a small function to your PowerShell 7 profile. Use the absolute path to this repository on your machine.
 
 ```powershell
 if (-not (Test-Path -LiteralPath $PROFILE)) {
@@ -65,16 +119,6 @@ Get-Command np
 After that, create and enter a fresh project directory, then run `np` from there.
 The script refuses to scaffold directly in your home directory.
 
-## Usage
-
-Use the script directly from this repository:
-
-```powershell
-.\new-project.ps1
-.\new-project.ps1 -Name my-app
-.\new-project.ps1 -Profile web
-```
-
 Or use the `np` profile function from any directory:
 
 ```powershell
@@ -84,23 +128,6 @@ np -Profile web
 np -Profile game -Python 3.13 -TypeMode strict
 np -NoGit -NoInstallHooks -NoGitHubActions
 ```
-
-Options:
-
-* `-Name`: project name. Defaults to the current directory name.
-* `-Python`: Python version for `uv init`. Defaults to `3.12`.
-* `-TypeMode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
-* `-Profile`: scaffold profile. Valid values are `base`, `desktop`, `web`, and `game`. Defaults to `base`.
-* `-NoGit`: skip git initialization.
-* `-NoInstallHooks`: skip pre-commit and pre-push hook installation.
-* `-NoGitHubActions`: skip GitHub Actions workflow generation.
-
-Profiles:
-
-* `base`: uv-managed Python package.
-* `desktop`: base profile plus PySide6 starter folders and a runnable window.
-* `web`: FastAPI backend plus Vite React TypeScript frontend.
-* `game`: FastAPI backend plus Vite TypeScript frontend with Phaser.
 
 ## Profile structures
 
