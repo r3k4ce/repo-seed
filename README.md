@@ -81,6 +81,48 @@ Set-Location "C:\Code\my-app"
 
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
 
+## Demo
+
+From an empty folder to a passing check run, in one terminal session.
+
+```console
+PS> New-Item -ItemType Directory -Path "C:\Code\demo-app" -Force
+PS> Set-Location C:\Code\demo-app
+PS> & "C:\Path\To\RepoSeed\new-project.ps1"
+Creating Python project: demo-app (demo_app, Python 3.12, pyright standard, profile base)
+Initialized project `demo-app`
+Done. Next: .\scripts\check.ps1
+```
+
+```text
+.
+|-- AGENTS.md
+|-- README.md
+|-- pyproject.toml
+|-- .editorconfig
+|-- .env.example
+|-- .gitattributes
+|-- .gitignore
+|-- .pre-commit-config.yaml
+|-- docs/
+|   `-- project-memory.yaml
+|-- scripts/
+|   |-- check.ps1
+|   `-- fix.ps1
+|-- src/demo_app/
+|   `-- __init__.py
+`-- tests/
+    `-- test_smoke.py
+```
+
+```console
+PS> .\scripts\check.ps1
+ruff format --check .   2 files already formatted
+ruff check .            All checks passed!
+pyright                 0 errors, 0 warnings, 0 informations
+pytest                  1 passed in 0.21s
+```
+
 ## Usage
 
 Use the script directly from this repository:
