@@ -1,5 +1,10 @@
 # RepoSeed
 
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#requirements)
+[![Shell](https://img.shields.io/badge/Shell-PowerShell%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white)](#requirements)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Type](https://img.shields.io/badge/Type-Scaffolder-lightgrey?style=flat-square&logo=gitignoredotio&logoColor=black)](#why)
+
 > Seed a clean, checked, agent-ready repo from an empty folder.
 
 RepoSeed is a small Windows PowerShell tool that turns an empty folder into
