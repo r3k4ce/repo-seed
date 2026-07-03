@@ -266,6 +266,8 @@ exclude = [
 typeCheckingMode = \"$TYPE_MODE\"
 pythonVersion = \"$PYTHON_VERSION\"
 reportMissingTypeStubs = false
+venvPath = \".\"
+venv = \".venv\"
 
 [tool.pytest.ini_options]
 minversion = \"8.0\"
@@ -557,6 +559,8 @@ exclude = [
 typeCheckingMode = \"$TYPE_MODE\"
 pythonVersion = \"$PYTHON_VERSION\"
 reportMissingTypeStubs = false
+venvPath = \".\"
+venv = \".venv\"
 
 [tool.pytest.ini_options]
 minversion = \"8.0\"
