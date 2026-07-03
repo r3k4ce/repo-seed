@@ -60,6 +60,9 @@ assert_web_frontend_config() {
   local project_dir="$1"
   local package_json_path="$project_dir/frontend/package.json"
   local vite_config_path="$project_dir/frontend/vite.config.ts"
+  local check_script_path="$project_dir/scripts/check.sh"
+  local fix_script_path="$project_dir/scripts/fix.sh"
+  local pre_commit_config_path="$project_dir/.pre-commit-config.yaml"
 
   assert_file_contains "$package_json_path" '"tailwindcss": "^4.3.2"'
   assert_file_contains "$package_json_path" '"@tailwindcss/vite": "^4.3.2"'
@@ -74,6 +77,26 @@ assert_web_frontend_config() {
   assert_file_contains "$vite_config_path" 'plugins: [react(), tailwindcss()]'
   assert_file_contains "$vite_config_path" 'provider: "v8"'
   assert_file_contains "$vite_config_path" 'thresholds: {'
+
+  assert_file_contains "$check_script_path" 'uv run pytest'
+  assert_file_contains "$check_script_path" 'npm run test'
+  assert_file_contains "$check_script_path" 'npm run typecheck'
+  assert_file_contains "$check_script_path" 'npm run lint'
+  assert_file_contains "$check_script_path" 'npm run build'
+  assert_file_not_contains "$check_script_path" 'npm run test --if-present'
+  assert_file_not_contains "$check_script_path" 'npm run test:e2e --if-present'
+
+  assert_file_contains "$fix_script_path" 'uv run pytest'
+  assert_file_contains "$fix_script_path" 'npm run test'
+  assert_file_contains "$fix_script_path" 'npm run typecheck'
+  assert_file_contains "$fix_script_path" 'npm run lint'
+  assert_file_contains "$fix_script_path" 'npm run build'
+  assert_file_not_contains "$fix_script_path" 'npm run test --if-present'
+  assert_file_not_contains "$fix_script_path" 'npm run test:e2e --if-present'
+
+  assert_file_contains "$pre_commit_config_path" 'entry: bash scripts/check.sh'
+  assert_file_contains "$pre_commit_config_path" 'stages: [pre-push]'
+  assert_file_not_contains "$pre_commit_config_path" 'npm run test:e2e'
 }
 
 run_scaffold_case() {
