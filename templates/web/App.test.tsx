@@ -18,3 +18,16 @@ test("renders backend health status", async () => {
 
   expect(await screen.findByText("Backend: demo ok")).toBeInTheDocument();
 });
+
+test("renders offline status when backend health fails", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => {
+      throw new Error("network unavailable");
+    }) as unknown as typeof fetch,
+  );
+
+  render(<App />);
+
+  expect(await screen.findByText("Backend: __PROJECT_NAME__ offline")).toBeInTheDocument();
+});

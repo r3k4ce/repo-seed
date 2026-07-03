@@ -491,7 +491,8 @@ Thumbs.db"
 
 write_web_scripts() {
   mkdir -p "scripts"
-  write_text_file "scripts/check.sh" '#!/usr/bin/env bash
+  if [[ "$PROFILE" == "game" ]]; then
+    write_text_file "scripts/check.sh" '#!/usr/bin/env bash
 set -euo pipefail
 
 pushd backend >/dev/null
@@ -508,7 +509,7 @@ npm run lint
 npm run build
 popd >/dev/null'
 
-  write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
+    write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
 set -euo pipefail
 
 pushd backend >/dev/null
@@ -525,6 +526,42 @@ npm run test:e2e --if-present
 npm run lint
 npm run build
 popd >/dev/null'
+  else
+    write_text_file "scripts/check.sh" '#!/usr/bin/env bash
+set -euo pipefail
+
+pushd backend >/dev/null
+uv run ruff format --check .
+uv run ruff check .
+uv run pyright
+uv run pytest
+popd >/dev/null
+
+pushd frontend >/dev/null
+npm run test
+npm run typecheck
+npm run lint
+npm run build
+popd >/dev/null'
+
+    write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
+set -euo pipefail
+
+pushd backend >/dev/null
+uv run ruff check . --fix
+uv run ruff format .
+uv run ruff check .
+uv run pyright
+uv run pytest
+popd >/dev/null
+
+pushd frontend >/dev/null
+npm run test
+npm run typecheck
+npm run lint
+npm run build
+popd >/dev/null'
+  fi
 
   chmod +x "scripts/check.sh" "scripts/fix.sh"
 }
@@ -628,29 +665,33 @@ write_frontend_files() {
     \"build\": \"tsc -b && vite build\",
     \"lint\": \"eslint .\",
     \"typecheck\": \"tsc --noEmit\",
-    \"test\": \"vitest run\",
+    \"test\": \"vitest run --coverage\",
+    \"test:watch\": \"vitest\",
     \"preview\": \"vite preview\"
   },
   \"dependencies\": {
-    \"@vitejs/plugin-react\": \"latest\",
-    \"vite\": \"latest\",
-    \"typescript\": \"latest\",
-    \"react\": \"latest\",
-    \"react-dom\": \"latest\",
-    \"@types/react\": \"latest\",
-    \"@types/react-dom\": \"latest\",
-    \"eslint\": \"latest\",
-    \"@eslint/js\": \"latest\",
-    \"typescript-eslint\": \"latest\",
-    \"eslint-plugin-react-hooks\": \"latest\",
-    \"eslint-plugin-react-refresh\": \"latest\",
-    \"globals\": \"latest\"
+    \"react\": \"^19.0.0\",
+    \"react-dom\": \"^19.0.0\"
   },
   \"devDependencies\": {
-    \"vitest\": \"latest\",
-    \"jsdom\": \"latest\",
-    \"@testing-library/react\": \"latest\",
-    \"@testing-library/jest-dom\": \"latest\"
+    \"@eslint/js\": \"^9.0.0\",
+    \"@tailwindcss/vite\": \"^4.3.2\",
+    \"@testing-library/jest-dom\": \"^6.0.0\",
+    \"@testing-library/react\": \"^16.0.0\",
+    \"@types/react\": \"^19.0.0\",
+    \"@types/react-dom\": \"^19.0.0\",
+    \"@vitejs/plugin-react\": \"^5.0.0\",
+    \"@vitest/coverage-v8\": \"^4.1.9\",
+    \"eslint\": \"^9.0.0\",
+    \"eslint-plugin-react-hooks\": \"^7.0.0\",
+    \"eslint-plugin-react-refresh\": \"^0.4.0\",
+    \"globals\": \"^16.0.0\",
+    \"jsdom\": \"^27.0.0\",
+    \"tailwindcss\": \"^4.3.2\",
+    \"typescript\": \"^5.9.0\",
+    \"typescript-eslint\": \"^8.0.0\",
+    \"vite\": \"^7.0.0\",
+    \"vitest\": \"^4.1.9\"
   }
 }"
   fi
@@ -766,10 +807,11 @@ export default tseslint.config(
     write_template_file "game/frontend_main.ts" "frontend/src/main.ts"
   else
     write_text_file "frontend/vite.config.ts" 'import { defineConfig } from "vitest/config";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     chunkSizeWarningLimit: 2000,
   },
@@ -781,6 +823,22 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+      exclude: [
+        "src/main.tsx",
+        "src/vite-env.d.ts",
+        "src/test/**",
+        "**/*.test.{ts,tsx}",
+      ],
+    },
   },
 });'
     write_text_file "frontend/eslint.config.js" 'import js from "@eslint/js";
@@ -869,7 +927,8 @@ jobs:
 write_web_ci() {
   [[ "$NO_GITHUB_ACTIONS" -eq 0 ]] || return 0
   mkdir -p ".github/workflows"
-  write_text_file ".github/workflows/ci.yml" 'name: ci
+  if [[ "$PROFILE" == "game" ]]; then
+    write_text_file ".github/workflows/ci.yml" 'name: ci
 
 on:
   push:
@@ -943,6 +1002,75 @@ jobs:
       - name: Frontend build
         working-directory: frontend
         run: npm run build'
+  else
+    write_text_file ".github/workflows/ci.yml" 'name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked --dev
+
+      - name: Ruff format check
+        working-directory: backend
+        run: uv run --locked ruff format --check .
+
+      - name: Ruff lint
+        working-directory: backend
+        run: uv run --locked ruff check .
+
+      - name: Pyright
+        working-directory: backend
+        run: uv run --locked pyright
+
+      - name: Pytest
+        working-directory: backend
+        run: uv run --locked pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend test
+        working-directory: frontend
+        run: npm run test
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build'
+  fi
 }
 
 install_base_hooks() {

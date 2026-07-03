@@ -33,6 +33,16 @@ assert_file_contains() {
   fi
 }
 
+assert_file_not_contains() {
+  local file_path="$1"
+  local unexpected="$2"
+
+  if [[ "$(<"$file_path")" == *"$unexpected"* ]]; then
+    printf 'Expected %s not to contain: %s\n' "$file_path" "$unexpected" >&2
+    exit 1
+  fi
+}
+
 assert_pyright_venv_config() {
   local profile="$1"
   local project_dir="$2"
@@ -44,6 +54,26 @@ assert_pyright_venv_config() {
 
   assert_file_contains "$pyproject_path" 'venvPath = "."'
   assert_file_contains "$pyproject_path" 'venv = ".venv"'
+}
+
+assert_web_frontend_config() {
+  local project_dir="$1"
+  local package_json_path="$project_dir/frontend/package.json"
+  local vite_config_path="$project_dir/frontend/vite.config.ts"
+
+  assert_file_contains "$package_json_path" '"tailwindcss": "^4.3.2"'
+  assert_file_contains "$package_json_path" '"@tailwindcss/vite": "^4.3.2"'
+  assert_file_contains "$package_json_path" '"@vitest/coverage-v8": "^4.1.9"'
+  assert_file_contains "$package_json_path" '"test": "vitest run --coverage"'
+  assert_file_contains "$package_json_path" '"test:watch": "vitest"'
+  assert_file_not_contains "$package_json_path" '"latest"'
+  assert_file_not_contains "$package_json_path" '@playwright/test'
+  assert_file_not_contains "$package_json_path" 'test:e2e'
+
+  assert_file_contains "$vite_config_path" 'import tailwindcss from "@tailwindcss/vite";'
+  assert_file_contains "$vite_config_path" 'plugins: [react(), tailwindcss()]'
+  assert_file_contains "$vite_config_path" 'provider: "v8"'
+  assert_file_contains "$vite_config_path" 'thresholds: {'
 }
 
 run_scaffold_case() {
@@ -62,6 +92,9 @@ run_scaffold_case() {
   popd >/dev/null
 
   assert_pyright_venv_config "$profile" "$project_dir"
+  if [[ "$profile" == "web" ]]; then
+    assert_web_frontend_config "$project_dir"
+  fi
   run_project_checks "$project_dir"
   printf '%s scaffold e2e passed\n' "$profile"
 }
