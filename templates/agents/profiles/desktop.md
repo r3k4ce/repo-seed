@@ -10,11 +10,11 @@ This is a PySide6 desktop app managed with `uv`.
 
 ## Commands
 
-```powershell
-uv sync --dev
+```__COMMAND_FENCE__
+__SETUP_COMMAND__
 uv run python -m __PACKAGE_NAME__
-.\scripts\check.ps1
-.\scripts\fix.ps1
+__CHECK_COMMAND__
+__FIX_COMMAND__
 ```
 
 Keep Qt object creation inside the UI layer. Tests should prefer import and model/service checks unless a task explicitly needs a live window.

@@ -101,6 +101,7 @@ copy_payload() {
 
   mkdir -p "$payload"
   cp "$REPO_ROOT/new-project.sh" "$payload/new-project.sh"
+  cp "$REPO_ROOT/new-project.ps1" "$payload/new-project.ps1"
   cp -R "$REPO_ROOT/templates" "$payload/templates"
   chmod +x "$payload/new-project.sh"
   printf 'managed-by=RepoSeed\ninstalled-command=%s\n' "$COMMAND_NAME" >"$payload/.reposeed-install"
@@ -143,6 +144,7 @@ warn_if_bin_dir_not_on_path() {
 main() {
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
   [[ -f "$REPO_ROOT/new-project.sh" ]] || die "Missing new-project.sh next to installer."
+  [[ -f "$REPO_ROOT/new-project.ps1" ]] || die "Missing new-project.ps1 next to installer."
   [[ -d "$REPO_ROOT/templates" ]] || die "Missing templates directory next to installer."
 
   parse_args "$@"

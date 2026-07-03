@@ -19,6 +19,12 @@ NAME="$(basename "$(pwd -P)")"
 PYTHON_VERSION="3.12"
 TYPE_MODE="standard"
 PROFILE="base"
+GENERATOR_NAME="new-project.sh"
+PRIMARY_SHELL="Bash"
+COMMAND_FENCE="bash"
+SETUP_COMMAND="uv sync --dev"
+CHECK_COMMAND="./scripts/check.sh"
+FIX_COMMAND="./scripts/fix.sh"
 NO_GIT=0
 NO_INSTALL_HOOKS=0
 NO_GITHUB_ACTIONS=0
@@ -111,6 +117,12 @@ expand_text() {
   text="${text//__PROJECT_NAME__/$PROJECT_NAME}"
   text="${text//__PACKAGE_NAME__/$PACKAGE_NAME}"
   text="${text//__PYTHON_VERSION__/$PYTHON_VERSION}"
+  text="${text//__GENERATOR_NAME__/$GENERATOR_NAME}"
+  text="${text//__PRIMARY_SHELL__/$PRIMARY_SHELL}"
+  text="${text//__COMMAND_FENCE__/$COMMAND_FENCE}"
+  text="${text//__SETUP_COMMAND__/$SETUP_COMMAND}"
+  text="${text//__CHECK_COMMAND__/$CHECK_COMMAND}"
+  text="${text//__FIX_COMMAND__/$FIX_COMMAND}"
   printf '%s' "$text"
 }
 

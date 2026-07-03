@@ -9,9 +9,9 @@ This is a FastAPI + Phaser web game monorepo.
 
 ## Commands
 
-```powershell
-.\scripts\check.ps1
-.\scripts\fix.ps1
+```__COMMAND_FENCE__
+__CHECK_COMMAND__
+__FIX_COMMAND__
 ```
 
 Keep Phaser scene, input, and rendering code in the frontend. Keep backend code focused on API/state. Do not add persistence, auth, multiplayer, or WebSockets unless the task explicitly asks for them.

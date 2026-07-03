@@ -8,12 +8,12 @@ This is a Python package managed with `uv`.
 
 ## Commands
 
-```powershell
-uv sync --dev
-.\scripts\check.ps1
-.\scripts\fix.ps1
+```__COMMAND_FENCE__
+__SETUP_COMMAND__
+__CHECK_COMMAND__
+__FIX_COMMAND__
 ```
 
 Use `uv add` or `uv add --dev` for dependencies.
 
-Before claiming completion, run the focused check first, then `.\scripts\check.ps1` when feasible.
+Before claiming completion, run the focused check first, then `__CHECK_COMMAND__` when feasible.

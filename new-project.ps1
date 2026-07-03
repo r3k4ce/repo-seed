@@ -128,7 +128,13 @@ function Expand-Template {
 
     return $Text.Replace("__PROJECT_NAME__", $ProjectName).
         Replace("__PACKAGE_NAME__", $PackageName).
-        Replace("__PYTHON_VERSION__", $Python)
+        Replace("__PYTHON_VERSION__", $Python).
+        Replace("__GENERATOR_NAME__", "new-project.ps1").
+        Replace("__PRIMARY_SHELL__", "PowerShell").
+        Replace("__COMMAND_FENCE__", "powershell").
+        Replace("__SETUP_COMMAND__", "uv sync --dev").
+        Replace("__CHECK_COMMAND__", ".\scripts\check.ps1").
+        Replace("__FIX_COMMAND__", ".\scripts\fix.ps1")
 }
 
 function Write-AgentsFile {

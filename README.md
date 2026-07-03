@@ -59,11 +59,12 @@ See [Usage](#usage) for the full option list.
 
 ## Requirements
 
-RepoSeed targets Linux with Bash and Windows with PowerShell 7+. The Bash
-script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
+RepoSeed v1 officially targets Linux with Bash and Windows with PowerShell 7+.
+The Bash script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
+macOS is not an official target yet.
 
-- **Bash** — required to run `new-project.sh` and the generated `scripts/*.sh`.
-- **PowerShell 7+** — required to run `new-project.ps1` and the generated `scripts/*.ps1`.
+- **Bash** — required on Linux to run `install.sh`, `new-project.sh`, and generated `scripts/*.sh`.
+- **PowerShell 7+** — required on Windows to run `install.ps1`, `new-project.ps1`, and generated `scripts/*.ps1`.
 - **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
 - **`npm`** (Node.js 18+) — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
 - **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `--no-git` or `-NoGit` to skip explicitly.
@@ -71,10 +72,10 @@ script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
 
 ## Quick start
 
-The shortest path from an empty folder to a checked, ready-to-commit project:
+The shortest path from an empty folder to a checked, ready-to-commit project on Linux:
 
 ```bash
-# 1. Install the Bash command from this RepoSeed checkout
+# 1. Install the native command from this RepoSeed checkout
 ./install.sh
 
 # 2. Create an empty project folder and enter it
@@ -88,13 +89,34 @@ reposeed
 ./scripts/check.sh
 ```
 
+On Windows with PowerShell 7+:
+
+```powershell
+# 1. Install the native command from this RepoSeed checkout
+.\install.ps1
+
+# 2. Create an empty project folder and enter it
+New-Item -ItemType Directory -Path ~/Code/my-app -Force | Out-Null
+Set-Location ~/Code/my-app
+
+# 3. Run the scaffolder
+reposeed
+
+# 4. Run the generated checks
+.\scripts\check.ps1
+```
+
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
 
-If `~/.local/bin` is not on your `PATH`, the installer will warn you. Add it
-to your shell profile or use the absolute-path fallback:
+The installers warn if the command directory is not on your `PATH`; they do
+not edit PATH automatically. Use the direct script fallback if needed:
 
 ```bash
 bash /path/to/RepoSeed/new-project.sh
+```
+
+```powershell
+& "C:\path\to\RepoSeed\new-project.ps1"
 ```
 
 ## Demo
@@ -141,17 +163,29 @@ pytest                  1 passed in 0.21s
 
 ## Usage
 
-Install the Bash command on Linux:
+Install the native command:
 
 ```bash
+# Linux
 ./install.sh
 reposeed --help
 ```
 
-The default install is per-user and does not require `sudo`:
+```powershell
+# Windows
+.\install.ps1
+reposeed -?
+```
+
+The Linux default install is per-user and does not require `sudo`:
 
 - command wrapper: `~/.local/bin/reposeed`
 - managed files: `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`
+
+The Windows default install is per-user and does not require admin rights:
+
+- command shim: `%LOCALAPPDATA%\Microsoft\WindowsApps\reposeed.ps1`
+- managed files: `%LOCALAPPDATA%\RepoSeed`
 
 To update an existing install after updating this repository, run the installer
 again from the updated checkout:
@@ -161,10 +195,15 @@ git pull
 ./install.sh
 ```
 
-Reinstalling replaces the managed RepoSeed copy, including `new-project.sh` and
+```powershell
+git pull
+.\install.ps1
+```
+
+Reinstalling replaces the managed RepoSeed copy, including both scaffolders and
 `templates/`, so removed or renamed templates do not linger.
 
-Installer options:
+Linux installer options:
 
 * `--bin-dir`: directory for the command wrapper. Defaults to `~/.local/bin`.
 * `--data-dir`: directory for managed RepoSeed files. Defaults to `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`.
@@ -178,6 +217,23 @@ reposeed --name my-app
 reposeed --profile web
 reposeed --profile game --python 3.13 --type-mode strict
 reposeed --no-git --no-install-hooks --no-github-actions
+```
+
+Windows installer options:
+
+* `-BinDir`: directory for the command shim. Defaults to `%LOCALAPPDATA%\Microsoft\WindowsApps`.
+* `-DataDir`: directory for managed RepoSeed files. Defaults to `%LOCALAPPDATA%\RepoSeed`.
+* `-Command`: command name to install. Defaults to `reposeed`.
+
+Run the installed PowerShell command from a project directory:
+
+```powershell
+reposeed
+reposeed -Name my-app
+reposeed -Profile desktop
+reposeed -Profile web
+reposeed -Profile game -Python 3.13 -TypeMode strict
+reposeed -NoGit -NoInstallHooks -NoGitHubActions
 ```
 
 You can also use the Bash script directly from this repository on Linux:
@@ -200,7 +256,7 @@ Bash options:
 * `--no-install-hooks`: skip pre-commit and pre-push hook installation.
 * `--no-github-actions`: skip GitHub Actions workflow generation.
 
-Use the PowerShell script directly from this repository on Windows:
+You can also use the PowerShell script directly from this repository on Windows:
 
 ```powershell
 .\new-project.ps1
