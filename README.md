@@ -74,18 +74,28 @@ script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
 The shortest path from an empty folder to a checked, ready-to-commit project:
 
 ```bash
-# 1. Create an empty project folder and enter it
+# 1. Install the Bash command from this RepoSeed checkout
+./install.sh
+
+# 2. Create an empty project folder and enter it
 mkdir -p ~/Code/my-app
 cd ~/Code/my-app
 
-# 2. Run the scaffolder (use the absolute path to your RepoSeed clone)
-bash /path/to/RepoSeed/new-project.sh
+# 3. Run the scaffolder
+reposeed
 
-# 3. Run the generated checks
+# 4. Run the generated checks
 ./scripts/check.sh
 ```
 
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
+
+If `~/.local/bin` is not on your `PATH`, the installer will warn you. Add it
+to your shell profile or use the absolute-path fallback:
+
+```bash
+bash /path/to/RepoSeed/new-project.sh
+```
 
 ## Demo
 
@@ -94,7 +104,7 @@ From an empty folder to a passing check run, in one terminal session.
 ```console
 $ mkdir -p ~/Code/demo-app
 $ cd ~/Code/demo-app
-$ bash /path/to/RepoSeed/new-project.sh
+$ reposeed
 Creating Python project: demo-app (demo_app, Python 3.12, pyright standard, profile base)
 Initialized project `demo-app`
 Done. Next: ./scripts/check.sh
@@ -131,7 +141,46 @@ pytest                  1 passed in 0.21s
 
 ## Usage
 
-Use the Bash script directly from this repository on Linux:
+Install the Bash command on Linux:
+
+```bash
+./install.sh
+reposeed --help
+```
+
+The default install is per-user and does not require `sudo`:
+
+- command wrapper: `~/.local/bin/reposeed`
+- managed files: `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`
+
+To update an existing install after updating this repository, run the installer
+again from the updated checkout:
+
+```bash
+git pull
+./install.sh
+```
+
+Reinstalling replaces the managed RepoSeed copy, including `new-project.sh` and
+`templates/`, so removed or renamed templates do not linger.
+
+Installer options:
+
+* `--bin-dir`: directory for the command wrapper. Defaults to `~/.local/bin`.
+* `--data-dir`: directory for managed RepoSeed files. Defaults to `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`.
+* `--command`: command name to install. Defaults to `reposeed`.
+
+Run the installed Bash command from a project directory:
+
+```bash
+reposeed
+reposeed --name my-app
+reposeed --profile web
+reposeed --profile game --python 3.13 --type-mode strict
+reposeed --no-git --no-install-hooks --no-github-actions
+```
+
+You can also use the Bash script directly from this repository on Linux:
 
 ```bash
 ./new-project.sh

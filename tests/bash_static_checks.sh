@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SCRIPT="$ROOT/new-project.sh"
+INSTALLER="$ROOT/install.sh"
 
 assert_file() {
   local path="$1"
@@ -37,7 +38,9 @@ assert_not_contains() {
 }
 
 assert_file "$SCRIPT" "new-project.sh must exist."
+assert_file "$INSTALLER" "install.sh must exist."
 bash -n "$SCRIPT"
+bash -n "$INSTALLER"
 
 script_text="$(<"$SCRIPT")"
 
@@ -78,6 +81,8 @@ done
 
 readme_text="$(<"$ROOT/README.md")"
 assert_contains "$readme_text" './new-project.sh' "README should document the bash entrypoint."
+assert_contains "$readme_text" './install.sh' "README should document the Bash installer."
+assert_contains "$readme_text" 'reposeed' "README should document the installed Bash command."
 assert_contains "$readme_text" './scripts/check.sh' "README should document generated bash check scripts."
 
 printf 'Bash static checks passed.\n'
