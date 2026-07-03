@@ -1,22 +1,21 @@
 # RepoSeed
 
-[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#requirements)
-[![Shell](https://img.shields.io/badge/Shell-PowerShell%207%2B-5391FE?style=flat-square&logo=powershell&logoColor=white)](#requirements)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)](#requirements)
+[![Shell](https://img.shields.io/badge/Shell-Bash%20%7C%20PowerShell-lightgrey?style=flat-square)](#requirements)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Type](https://img.shields.io/badge/Type-Scaffolder-lightgrey?style=flat-square&logo=gitignoredotio&logoColor=black)](#why)
 
 > Seed a clean, checked, agent-ready repo from an empty folder.
 
-RepoSeed is a small Windows PowerShell tool that turns an empty folder into
-a working project starter. It creates the folder layout, config files,
-tests, scripts, and a starting `AGENTS.md`, then sets up git, hooks, and
-a GitHub Actions workflow so the first commit is already in a healthy
-state.
+RepoSeed is a small Bash and PowerShell tool that turns an empty folder
+into a working project starter. It creates the folder layout, config files,
+tests, scripts, and a starting `AGENTS.md`, then sets up git, hooks, and a
+GitHub Actions workflow so the first commit is already in a healthy state.
 
-It is for Windows and PowerShell developers who keep starting the same
-kinds of small projects — Python packages, FastAPI backends, PySide6
-desktop apps, and small game or toy apps — and want a clean baseline
-with checks included every time.
+It is for developers who keep starting the same kinds of small projects —
+Python packages, FastAPI backends, and small game or toy apps — and want a
+clean baseline with checks included every time. The PowerShell entrypoint
+also includes a desktop profile for PySide6 apps.
 
 ## Why
 
@@ -40,7 +39,7 @@ Early but usable. I use this for my own project starts.
 ## Profiles
 
 - **`base`** — uv-managed Python package with a `src/` layout, tests, checks, and CI.
-- **`desktop`** — `base` profile plus a PySide6 starter window under `src/<package>/ui/`.
+- **`desktop`** — PowerShell-only: `base` profile plus a PySide6 starter window under `src/<package>/ui/`.
 - **`web`** — FastAPI backend with a Vite + React + TypeScript frontend.
 - **`game`** — FastAPI backend with a Vite + TypeScript + Phaser frontend and a Playwright smoke test.
 
@@ -52,7 +51,7 @@ See [Usage](#usage) for the full option list.
 - **Ruff** for linting and formatting
 - **Pyright** for static type checking (mode configurable via `-TypeMode`)
 - **pytest** with coverage (branch coverage, 80% fail-under)
-- **PowerShell** `scripts/check.ps1` and `scripts/fix.ps1` to run everything
+- **Bash or PowerShell** check/fix scripts to run everything
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
 - **`AGENTS.md`** with project-specific agent instructions
@@ -60,28 +59,30 @@ See [Usage](#usage) for the full option list.
 
 ## Requirements
 
-RepoSeed targets Windows with PowerShell 7+ and uses these tools:
+RepoSeed targets Linux with Bash and Windows with PowerShell 7+. The Bash
+script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
 
+- **Bash** — required to run `new-project.sh` and the generated `scripts/*.sh`.
 - **PowerShell 7+** — required to run `new-project.ps1` and the generated `scripts/*.ps1`.
 - **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
 - **`npm`** (Node.js 18+) — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
-- **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `-NoGit` to skip explicitly.
+- **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `--no-git` or `-NoGit` to skip explicitly.
 - **Python** — any version `uv` can install; default is `3.12` (override with `-Python`).
 
 ## Quick start
 
 The shortest path from an empty folder to a checked, ready-to-commit project:
 
-```powershell
+```bash
 # 1. Create an empty project folder and enter it
-New-Item -ItemType Directory -Path "C:\Code\my-app" -Force
-Set-Location "C:\Code\my-app"
+mkdir -p ~/Code/my-app
+cd ~/Code/my-app
 
 # 2. Run the scaffolder (use the absolute path to your RepoSeed clone)
-& "C:\Path\To\RepoSeed\new-project.ps1"
+bash /path/to/RepoSeed/new-project.sh
 
 # 3. Run the generated checks
-.\scripts\check.ps1
+./scripts/check.sh
 ```
 
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
@@ -91,12 +92,12 @@ Defaults to the `base` profile. See [Profiles](#profiles) for the available prof
 From an empty folder to a passing check run, in one terminal session.
 
 ```console
-PS> New-Item -ItemType Directory -Path "C:\Code\demo-app" -Force
-PS> Set-Location C:\Code\demo-app
-PS> & "C:\Path\To\RepoSeed\new-project.ps1"
+$ mkdir -p ~/Code/demo-app
+$ cd ~/Code/demo-app
+$ bash /path/to/RepoSeed/new-project.sh
 Creating Python project: demo-app (demo_app, Python 3.12, pyright standard, profile base)
 Initialized project `demo-app`
-Done. Next: .\scripts\check.ps1
+Done. Next: ./scripts/check.sh
 ```
 
 ```text
@@ -112,8 +113,8 @@ Done. Next: .\scripts\check.ps1
 |-- docs/
 |   `-- project-memory.yaml
 |-- scripts/
-|   |-- check.ps1
-|   `-- fix.ps1
+|   |-- check.sh
+|   `-- fix.sh
 |-- src/demo_app/
 |   `-- __init__.py
 `-- tests/
@@ -121,7 +122,7 @@ Done. Next: .\scripts\check.ps1
 ```
 
 ```console
-PS> .\scripts\check.ps1
+$ ./scripts/check.sh
 ruff format --check .   2 files already formatted
 ruff check .            All checks passed!
 pyright                 0 errors, 0 warnings, 0 informations
@@ -130,7 +131,27 @@ pytest                  1 passed in 0.21s
 
 ## Usage
 
-Use the script directly from this repository:
+Use the Bash script directly from this repository on Linux:
+
+```bash
+./new-project.sh
+./new-project.sh --name my-app
+./new-project.sh --profile web
+./new-project.sh --profile game --python 3.13 --type-mode strict
+./new-project.sh --no-git --no-install-hooks --no-github-actions
+```
+
+Bash options:
+
+* `--name`: project name. Defaults to the current directory name.
+* `--python`: Python version for `uv init`. Defaults to `3.12`.
+* `--type-mode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
+* `--profile`: scaffold profile. Bash supports `base`, `web`, and `game`. Defaults to `base`.
+* `--no-git`: skip git initialization.
+* `--no-install-hooks`: skip pre-commit and pre-push hook installation.
+* `--no-github-actions`: skip GitHub Actions workflow generation.
+
+Use the PowerShell script directly from this repository on Windows:
 
 ```powershell
 .\new-project.ps1
@@ -143,7 +164,7 @@ Options:
 * `-Name`: project name. Defaults to the current directory name.
 * `-Python`: Python version for `uv init`. Defaults to `3.12`.
 * `-TypeMode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
-* `-Profile`: scaffold profile. See [Profiles](#profiles) for the available values. Defaults to `base`.
+* `-Profile`: scaffold profile. PowerShell supports `base`, `desktop`, `web`, and `game`. Defaults to `base`.
 * `-NoGit`: skip git initialization.
 * `-NoInstallHooks`: skip pre-commit and pre-push hook installation.
 * `-NoGitHubActions`: skip GitHub Actions workflow generation.
@@ -199,14 +220,14 @@ np -NoGit -NoInstallHooks -NoGitHubActions
 |-- src/<package>/
 |-- tests/
 |-- scripts/
-|   |-- check.ps1
-|   `-- fix.ps1
+|   |-- check.sh
+|   `-- fix.sh
 |-- docs/project-memory.yaml
 |-- pyproject.toml
 `-- AGENTS.md
 ```
 
-Entrypoint: Python package in `src/<package>/`. Check with `.\scripts\check.ps1`.
+Entrypoint: Python package in `src/<package>/`. Check with `./scripts/check.sh` for Bash-generated projects or `.\scripts\check.ps1` for PowerShell-generated projects.
 
 ### `desktop`
 
