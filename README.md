@@ -9,8 +9,8 @@
 
 RepoSeed is a small Bash and PowerShell tool that turns an empty folder
 into a working project starter. It creates the folder layout, config files,
-tests, scripts, and a starting `AGENTS.md`, then sets up git, hooks, and a
-GitHub Actions workflow so the first commit is already in a healthy state.
+tests, and scripts, then sets up git, hooks, and a GitHub Actions workflow
+so the first commit is already in a healthy state.
 
 It is for developers who keep starting the same kinds of small projects —
 Python packages, FastAPI backends, and small game or toy apps — and want a
@@ -19,7 +19,7 @@ also includes a desktop profile for PySide6 apps.
 
 ## Why
 
-Most project starts suffer from the same four problems:
+Most project starts suffer from the same three problems:
 
 - **Repetitive setup** — redoing the same folder layout, `pyproject.toml`,
   and tooling config for every new repo.
@@ -27,10 +27,8 @@ Most project starts suffer from the same four problems:
   and type-checker settings from one project to the next.
 - **Missing tests and CI** — adding tests and a CI workflow "later", which
   often means never.
-- **Weak agent instructions** — a thin or missing `AGENTS.md`, so AI coding
-  agents have to relearn the project conventions from scratch.
 
-RepoSeed fixes all four by making the boring part a single command.
+RepoSeed fixes all three by making the boring part a single command.
 
 ## Status
 
@@ -54,7 +52,6 @@ See [Usage](#usage) for the full option list.
 - **Bash or PowerShell** check/fix scripts to run everything
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
-- **`AGENTS.md`** with project-specific agent instructions
 - **Project memory** at `docs/project-memory.yaml`
 
 ## Requirements
@@ -134,7 +131,6 @@ Done. Next: ./scripts/check.sh
 
 ```text
 .
-|-- AGENTS.md
 |-- README.md
 |-- pyproject.toml
 |-- .editorconfig
@@ -328,8 +324,7 @@ np -NoGit -NoInstallHooks -NoGitHubActions
 |   |-- check.sh
 |   `-- fix.sh
 |-- docs/project-memory.yaml
-|-- pyproject.toml
-`-- AGENTS.md
+`-- pyproject.toml
 ```
 
 Entrypoint: Python package in `src/<package>/`. Check with `./scripts/check.sh` for Bash-generated projects or `.\scripts\check.ps1` for PowerShell-generated projects.
@@ -346,8 +341,7 @@ Entrypoint: Python package in `src/<package>/`. Check with `./scripts/check.sh` 
 |-- tests/
 |-- scripts/
 |-- docs/project-memory.yaml
-|-- pyproject.toml
-`-- AGENTS.md
+`-- pyproject.toml
 ```
 
 Entrypoint: `uv run python -m <package>`. UI starts in `src/<package>/ui/`.
@@ -365,8 +359,7 @@ Entrypoint: `uv run python -m <package>`. UI starts in `src/<package>/ui/`.
 |   |-- package.json
 |   `-- vite.config.ts
 |-- scripts/
-|-- docs/project-memory.yaml
-`-- AGENTS.md
+`-- docs/project-memory.yaml
 ```
 
 Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; React app in `frontend/src/`.
@@ -387,8 +380,7 @@ Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; React app i
 |   |-- playwright.config.ts
 |   `-- vite.config.ts
 |-- scripts/
-|-- docs/project-memory.yaml
-`-- AGENTS.md
+`-- docs/project-memory.yaml
 ```
 
 Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; Phaser scene code in `frontend/src/game/`.

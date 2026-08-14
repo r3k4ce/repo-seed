@@ -5,6 +5,11 @@ See the README for the current project description and usage.
 
 ## [Unreleased]
 
+### Removed
+
+- Scaffolders no longer generate `AGENTS.md` in new projects, and the
+  `templates/agents/` templates have been removed.
+
 ### Changed
 
 - `web` profile on Windows (`new-project.ps1`) now matches the bash scaffolder:
