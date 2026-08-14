@@ -104,6 +104,11 @@ exit /b 0
     $FixScript = Join-Path $ProjectDir "scripts/fix.ps1"
     $PreCommit = Join-Path $ProjectDir ".pre-commit-config.yaml"
     $CiYaml = Join-Path $ProjectDir ".github/workflows/ci.yml"
+    $AgentsFile = Join-Path $ProjectDir "AGENTS.md"
+
+    if (Test-Path -LiteralPath $AgentsFile) {
+        throw "Expected no AGENTS.md in generated project: $AgentsFile"
+    }
 
     Assert-Contains -Path $PackageJson -Expected '"react": "^19.0.0"'
     Assert-Contains -Path $PackageJson -Expected '"tailwindcss": "^4.3.2"'

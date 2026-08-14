@@ -118,6 +118,10 @@ run_scaffold_case() {
   if [[ "$profile" == "web" ]]; then
     assert_web_frontend_config "$project_dir"
   fi
+  if [[ -e "$project_dir/AGENTS.md" ]]; then
+    printf 'Expected no AGENTS.md in generated project: %s/AGENTS.md\n' "$project_dir" >&2
+    exit 1
+  fi
   run_project_checks "$project_dir"
   printf '%s scaffold e2e passed\n' "$profile"
 }

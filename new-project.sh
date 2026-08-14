@@ -2,10 +2,6 @@
 set -euo pipefail
 
 # Template references used by supported profiles:
-# agents/base.md
-# agents/profiles/base.md
-# agents/profiles/web.md
-# agents/profiles/game.md
 # web/App.test.tsx
 # web/test_setup.ts
 # game/frontend_main.ts
@@ -133,15 +129,6 @@ write_template_file() {
 
   content="$(read_template "$template_name")"
   write_text_file "$path" "$(expand_text "$content")"
-}
-
-write_agents_file() {
-  local profile_name="$1"
-  local base snippet
-
-  base="$(expand_text "$(read_template "agents/base.md")")"
-  snippet="$(expand_text "$(read_template "agents/profiles/$profile_name.md")")"
-  write_text_file "AGENTS.md" "${base%$'\n'}"$'\n\n'"$snippet"
 }
 
 require_uv() {
@@ -1112,7 +1099,7 @@ create_web_or_game_project() {
   local web_template_prefix="web"
   local frontend_description="React TypeScript frontend"
   local memory_summary="Created initial web app scaffold."
-  local memory_changed="Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, AGENTS.md, and memory file."
+  local memory_changed="Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, and memory file."
   local backend_test_template="web/test_health.py"
   local backend_test_path="test_health.py"
   local frontend_setup_extra=""
@@ -1123,7 +1110,7 @@ create_web_or_game_project() {
     web_template_prefix="game"
     frontend_description="Phaser game frontend"
     memory_summary="Created initial game scaffold."
-    memory_changed="Initial FastAPI backend, Phaser frontend, checks, CI, hooks, AGENTS.md, and memory file."
+    memory_changed="Initial FastAPI backend, Phaser frontend, checks, CI, hooks, and memory file."
     backend_test_template="game/test_game_api.py"
     backend_test_path="test_game_api.py"
     frontend_setup_extra="    pushd frontend >/dev/null; npm exec playwright install chromium; popd >/dev/null"
@@ -1199,7 +1186,6 @@ Project memory lives in docs/project-memory.yaml."
     verification:
       - 'Not run yet; run ./scripts/check.sh before first commit.'"
 
-  write_agents_file "$PROFILE"
   write_text_file ".pre-commit-config.yaml" 'repos:
   - repo: local
     hooks:
@@ -1301,11 +1287,10 @@ Project memory lives in docs/project-memory.yaml."
     time_local: \"$(timestamp_local)\"
     summary: \"Created initial $PROFILE scaffold.\"
     changed:
-      - \"Initial $PROFILE project, tests, checks, CI, hooks, AGENTS.md, and memory file.\"
+      - \"Initial $PROFILE project, tests, checks, CI, hooks, and memory file.\"
     verification:
       - 'Not run yet; run ./scripts/check.sh before first commit.'"
 
-  write_agents_file "$PROFILE"
   write_base_ci
   install_base_hooks
 

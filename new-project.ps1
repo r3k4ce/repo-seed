@@ -137,15 +137,6 @@ function Expand-Template {
         Replace("__FIX_COMMAND__", ".\scripts\fix.ps1")
 }
 
-function Write-AgentsFile {
-    param([Parameter(Mandatory)] [string]$ProfileName)
-
-    $base = Expand-Template (Read-Template "agents/base.md")
-    $snippet = Expand-Template (Read-Template "agents/profiles/$ProfileName.md")
-
-    Write-TextFile -Path "AGENTS.md" -Content ($base.TrimEnd() + "`n`n" + $snippet)
-}
-
 function Write-TemplateFile {
     param(
         [Parameter(Mandatory)] [string]$TemplateName,
@@ -217,7 +208,7 @@ if ($Profile -in @("web", "game")) {
     $WebTemplatePrefix = if ($Profile -eq "game") { "game" } else { "web" }
     $FrontendDescription = if ($Profile -eq "game") { "Phaser game frontend" } else { "React TypeScript frontend" }
     $MemorySummary = if ($Profile -eq "game") { "Created initial game scaffold." } else { "Created initial web app scaffold." }
-    $MemoryChanged = if ($Profile -eq "game") { "Initial FastAPI backend, Phaser frontend, checks, CI, hooks, AGENTS.md, and memory file." } else { "Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, AGENTS.md, and memory file." }
+    $MemoryChanged = if ($Profile -eq "game") { "Initial FastAPI backend, Phaser frontend, checks, CI, hooks, and memory file." } else { "Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, and memory file." }
     $BackendTestTemplate = if ($Profile -eq "game") { "game/test_game_api.py" } else { "web/test_health.py" }
     $BackendTestPath = if ($Profile -eq "game") { "test_game_api.py" } else { "test_health.py" }
 
@@ -921,8 +912,6 @@ entries:
       - 'Not run yet; run .\scripts\check.ps1 before first commit.'
 "@
 
-    Write-AgentsFile $Profile
-
     Write-TextFile -Path ".pre-commit-config.yaml" -Content @'
 repos:
   - repo: local
@@ -1452,12 +1441,10 @@ entries:
     time_local: "$TimeLocal"
     summary: "Created initial $Profile scaffold."
     changed:
-      - "Initial $Profile project, tests, checks, CI, hooks, AGENTS.md, and memory file."
+      - "Initial $Profile project, tests, checks, CI, hooks, and memory file."
     verification:
       - 'Not run yet; run .\scripts\check.ps1 before first commit.'
 "@
-
-Write-AgentsFile $Profile
 
 if (-not $NoGitHubActions) {
     $ciPath = Join-Path (Join-Path ".github" "workflows") "ci.yml"
