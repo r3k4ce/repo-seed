@@ -348,29 +348,33 @@ exclude_also = [
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
-    "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "eslint": "latest",
-    "@eslint/js": "latest",
-    "typescript-eslint": "latest",
-    "eslint-plugin-react-hooks": "latest",
-    "eslint-plugin-react-refresh": "latest",
-    "globals": "latest"
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "vitest": "latest",
-    "jsdom": "latest",
-    "@testing-library/react": "latest",
-    "@testing-library/jest-dom": "latest"
+    "@eslint/js": "^9.0.0",
+    "@tailwindcss/vite": "^4.3.2",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "globals": "^16.0.0",
+    "jsdom": "^27.0.0",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vite": "^7.0.0",
+    "vitest": "^4.1.9"
   }
 }
 "@
@@ -485,10 +489,11 @@ export default defineConfig({
     else {
         Write-TextFile -Path (Join-Path "frontend" "vite.config.ts") -Content @'
 import { defineConfig } from "vitest/config";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     chunkSizeWarningLimit: 2000,
   },
@@ -500,6 +505,22 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+      exclude: [
+        "src/main.tsx",
+        "src/vite-env.d.ts",
+        "src/test/**",
+        "**/*.test.{ts,tsx}",
+      ],
+    },
   },
 });
 '@
@@ -687,7 +708,8 @@ Thumbs.db
 
     New-Item -ItemType Directory -Path "scripts" -Force | Out-Null
 
-    Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
+    if ($Profile -eq "game") {
+        Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
 $ErrorActionPreference = "Stop"
 
 function Invoke-Checked {
@@ -727,8 +749,52 @@ finally {
     Pop-Location
 }
 '@
+    }
+    else {
+        Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
+$ErrorActionPreference = "Stop"
 
-    Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
+function Invoke-Checked {
+    param(
+        [Parameter(Mandatory)] [string]$Command,
+        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
+    )
+
+    & $Command @Arguments
+
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
+$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
+
+Push-Location backend
+try {
+    Invoke-Checked uv run ruff format --check .
+    Invoke-Checked uv run ruff check .
+    Invoke-Checked uv run pyright
+    Invoke-Checked uv run pytest
+}
+finally {
+    Pop-Location
+}
+
+Push-Location frontend
+try {
+    Invoke-Checked $Npm run test
+    Invoke-Checked $Npm run typecheck
+    Invoke-Checked $Npm run lint
+    Invoke-Checked $Npm run build
+}
+finally {
+    Pop-Location
+}
+'@
+    }
+
+    if ($Profile -eq "game") {
+        Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
 $ErrorActionPreference = "Stop"
 
 function Invoke-Checked {
@@ -769,6 +835,50 @@ finally {
     Pop-Location
 }
 '@
+    }
+    else {
+        Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
+$ErrorActionPreference = "Stop"
+
+function Invoke-Checked {
+    param(
+        [Parameter(Mandatory)] [string]$Command,
+        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
+    )
+
+    & $Command @Arguments
+
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
+$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
+
+Push-Location backend
+try {
+    Invoke-Checked uv run ruff check . --fix
+    Invoke-Checked uv run ruff format .
+    Invoke-Checked uv run ruff check .
+    Invoke-Checked uv run pyright
+    Invoke-Checked uv run pytest
+}
+finally {
+    Pop-Location
+}
+
+Push-Location frontend
+try {
+    Invoke-Checked $Npm run test
+    Invoke-Checked $Npm run typecheck
+    Invoke-Checked $Npm run lint
+    Invoke-Checked $Npm run build
+}
+finally {
+    Pop-Location
+}
+'@
+    }
 
     $FrontendSetupExtra = if ($Profile -eq "game") { "    Push-Location frontend; npm exec playwright install chromium; Pop-Location`n" } else { "" }
 
@@ -828,7 +938,8 @@ repos:
     if (-not $NoGitHubActions) {
         $ciPath = Join-Path (Join-Path ".github" "workflows") "ci.yml"
 
-        Write-TextFile -Path $ciPath -Content @'
+        if ($Profile -eq "game") {
+            Write-TextFile -Path $ciPath -Content @'
 name: ci
 
 on:
@@ -904,6 +1015,78 @@ jobs:
         working-directory: frontend
         run: npm run build
 '@
+        }
+        else {
+            Write-TextFile -Path $ciPath -Content @'
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked --dev
+
+      - name: Ruff format check
+        working-directory: backend
+        run: uv run --locked ruff format --check .
+
+      - name: Ruff lint
+        working-directory: backend
+        run: uv run --locked ruff check .
+
+      - name: Pyright
+        working-directory: backend
+        run: uv run --locked pyright
+
+      - name: Pytest
+        working-directory: backend
+        run: uv run --locked pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend test
+        working-directory: frontend
+        run: npm run test
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+'@
+        }
     }
 
     if (-not $NoInstallHooks) {
