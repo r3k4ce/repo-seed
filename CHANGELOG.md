@@ -3,6 +3,15 @@
 All notable changes to RepoSeed are documented here.
 See the README for the current project description and usage.
 
+## [Unreleased]
+
+### Changed
+
+- `web` profile on Windows (`new-project.ps1`) now matches the bash scaffolder:
+  pinned frontend dependencies, Tailwind CSS, Vitest coverage gates, and a
+  required frontend typecheck. Generated web CI runs frontend test, typecheck,
+  lint, and build (no Playwright).
+
 ## [v0.1.0] - 2026-06-30
 
 ### Added

@@ -120,6 +120,10 @@ try {
     Assert-Contains -Path $CiYaml -Expected 'run: npm run test'
     Assert-Contains -Path $CiYaml -Expected '- name: Frontend typecheck'
     Assert-Contains -Path $CiYaml -Expected 'run: npm run typecheck'
+    Assert-Contains -Path $CiYaml -Expected '- name: Frontend lint'
+    Assert-Contains -Path $CiYaml -Expected 'run: npm run lint'
+    Assert-Contains -Path $CiYaml -Expected '- name: Frontend build'
+    Assert-Contains -Path $CiYaml -Expected 'run: npm run build'
     Assert-NotContains -Path $CiYaml -Unexpected "Install Playwright Chromium"
     Assert-NotContains -Path $CiYaml -Unexpected "test:e2e"
 
