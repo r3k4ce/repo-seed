@@ -71,6 +71,18 @@ EOF
   export PATH="$fake_bin:$PATH"
 }
 
+prepend_fake_npm() {
+  local fake_bin="$1"
+  local log_path="$2"
+
+  cat >"$fake_bin/npm" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "\$*" >>"$log_path"
+EOF
+  chmod +x "$fake_bin/npm"
+}
+
 run_bash_install_contract() {
   local tmp_root bin_dir data_dir wrapper
 
@@ -142,6 +154,10 @@ run_base_scaffold_contract() {
 }
 
 run_powershell_contract_if_available() {
+  if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* ]]; then
+    printf 'Skipping PowerShell contract under Git Bash\n'
+    return
+  fi
   if ! command -v pwsh >/dev/null 2>&1; then
     printf 'Skipping PowerShell contract: pwsh not found\n'
     return
@@ -180,9 +196,60 @@ run_powershell_contract_if_available() {
   fi
 }
 
+run_bash_web_and_game_install_contract() {
+  local tmp_root project_dir log_path game_dir
+  tmp_root="$(mktemp -d)"
+  log_path="$tmp_root/npm-args.log"
+  : >"$log_path"
+  prepend_fake_uv "$tmp_root/bin"
+  prepend_fake_npm "$tmp_root/bin" "$log_path"
+  project_dir="$tmp_root/bash-web-install-contract"
+  mkdir -p "$project_dir"
+
+  pushd "$project_dir" >/dev/null
+  "$ROOT/new-project.sh" \
+    --profile web \
+    --name bash-web-install-contract \
+    --no-git \
+    --no-install-hooks \
+    --no-github-actions
+  popd >/dev/null
+
+  [[ -f "$project_dir/README.md" ]] || {
+    printf 'Expected README.md: %s\n' "$project_dir/README.md" >&2
+    exit 1
+  }
+  local -a calls
+  mapfile -t calls <"$log_path"
+  if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit" ]]; then
+    printf 'Expected web npm call install --no-audit, got: %s\n' "${calls[*]}" >&2
+    exit 1
+  fi
+
+  : >"$log_path"
+  game_dir="$tmp_root/bash-game-install-contract"
+  mkdir -p "$game_dir"
+
+  pushd "$game_dir" >/dev/null
+  "$ROOT/new-project.sh" \
+    --profile game \
+    --name bash-game-install-contract \
+    --no-git \
+    --no-install-hooks \
+    --no-github-actions
+  popd >/dev/null
+
+  mapfile -t calls <"$log_path"
+  if [[ "${#calls[@]}" -ne 2 || "${calls[0]}" != "install --no-audit" || "${calls[1]}" != "exec playwright install chromium" ]]; then
+    printf 'Expected game npm calls install --no-audit then Playwright install, got: %s\n' "${calls[*]}" >&2
+    exit 1
+  fi
+}
+
 run_bash_install_contract
 run_windows_installer_static_contract
 run_base_scaffold_contract
 run_powershell_contract_if_available
+run_bash_web_and_game_install_contract
 
 printf 'cross-platform contract tests passed\n'

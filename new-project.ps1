@@ -593,7 +593,7 @@ export default tseslint.config(
 
     Push-Location "frontend"
     try {
-        Invoke-Checked $NpmCommand install
+        Invoke-Checked $NpmCommand install --no-audit
 
         if ($Profile -eq "game") {
             Invoke-Checked $NpmCommand exec playwright install chromium

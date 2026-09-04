@@ -43,6 +43,7 @@ function Assert-InOrder {
 
 $TmpRoot = $null
 $OriginalPath = $env:Path
+$OriginalNpmLog = $env:REPOSEED_TEST_NPM_LOG
 
 try {
     $TmpRoot = [System.IO.Path]::GetFullPath(
@@ -54,10 +55,14 @@ try {
     $BinDir = Join-Path $TmpRoot "bin"
     New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
 
+    $NpmLog = Join-Path $TmpRoot "npm-args.log"
+    $env:REPOSEED_TEST_NPM_LOG = $NpmLog
+
     $env:Path = $BinDir + [System.IO.Path]::PathSeparator + $env:Path
 
     Set-Content -LiteralPath (Join-Path $BinDir "npm.cmd") -Value @"
 @echo off
+>> "%REPOSEED_TEST_NPM_LOG%" echo %*
 exit /b 0
 "@
 
@@ -96,6 +101,11 @@ exit /b 0
     }
     finally {
         Pop-Location
+    }
+
+    $WebNpmCalls = @(Get-Content -LiteralPath $NpmLog)
+    if ($WebNpmCalls.Count -ne 1 -or $WebNpmCalls[0] -ne "install --no-audit") {
+        throw "Expected web npm call install --no-audit, got: $($WebNpmCalls -join ', ')"
     }
 
     $PackageJson = Join-Path $ProjectDir "frontend/package.json"
@@ -158,11 +168,37 @@ exit /b 0
     Assert-NotContains -Path $CiYaml -Unexpected "Install Playwright Chromium"
     Assert-NotContains -Path $CiYaml -Unexpected "test:e2e"
 
+    Clear-Content -LiteralPath $NpmLog
+
+    $GameDir = Join-Path $TmpRoot "ps-game-contract"
+    New-Item -ItemType Directory -Path $GameDir -Force | Out-Null
+
+    Push-Location $GameDir
+    try {
+        & "$PSScriptRoot\..\new-project.ps1" -Name ps-game-contract -Profile game -NoGit -NoInstallHooks -NoGitHubActions
+    }
+    finally {
+        Pop-Location
+    }
+
+    $GameNpmCalls = @(Get-Content -LiteralPath $NpmLog)
+    if ($GameNpmCalls.Count -ne 2 -or
+        $GameNpmCalls[0] -ne "install --no-audit" -or
+        $GameNpmCalls[1] -ne "exec playwright install chromium") {
+        throw "Expected game npm calls install --no-audit then Playwright install, got: $($GameNpmCalls -join ', ')"
+    }
+
     Write-Host "PowerShell web contract passed"
 }
 finally {
     if ($OriginalPath) {
         $env:Path = $OriginalPath
+    }
+    if ($null -ne $OriginalNpmLog) {
+        $env:REPOSEED_TEST_NPM_LOG = $OriginalNpmLog
+    }
+    else {
+        Remove-Item Env:\REPOSEED_TEST_NPM_LOG -ErrorAction SilentlyContinue
     }
     if ($TmpRoot -and (Test-Path -LiteralPath $TmpRoot)) {
         & cmd.exe /c rmdir /s /q $TmpRoot 2>&1 | Out-Null
