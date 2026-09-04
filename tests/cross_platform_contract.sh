@@ -197,8 +197,10 @@ run_powershell_contract_if_available() {
 }
 
 run_bash_web_and_game_install_contract() {
-  local tmp_root project_dir log_path game_dir
+  local tmp_root project_dir log_path game_dir cleanup_command
   tmp_root="$(mktemp -d)"
+  printf -v cleanup_command 'cd -- %q >/dev/null 2>&1 || true; rm -rf -- %q' "$PWD" "$tmp_root"
+  trap "$cleanup_command" EXIT
   log_path="$tmp_root/npm-args.log"
   : >"$log_path"
   prepend_fake_uv "$tmp_root/bin"
@@ -244,6 +246,15 @@ run_bash_web_and_game_install_contract() {
     printf 'Expected game npm calls install --no-audit then Playwright install, got: %s\n' "${calls[*]}" >&2
     exit 1
   fi
+
+  rm -rf -- "$tmp_root"
+
+  [[ ! -d "$tmp_root" ]] || {
+    printf 'Expected temporary contract root to be cleaned up: %s\n' "$tmp_root" >&2
+    exit 1
+  }
+
+  trap - EXIT
 }
 
 run_bash_install_contract
