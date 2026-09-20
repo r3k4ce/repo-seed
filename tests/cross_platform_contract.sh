@@ -223,6 +223,7 @@ run_bash_web_and_game_install_contract() {
   }
   assert_file_contains "$project_dir/frontend/package.json" '"@vitest/coverage-v8": "4.1.10"'
   assert_file_contains "$project_dir/frontend/package.json" '"vitest": "4.1.10"'
+  assert_file_contains "$project_dir/frontend/package.json" '"@testing-library/dom": "^10.0.0"'
   local -a calls
   mapfile -t calls <"$log_path"
   if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit --legacy-peer-deps" ]]; then

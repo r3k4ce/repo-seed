@@ -125,6 +125,7 @@ exit /b 0
     Assert-Contains -Path $PackageJson -Expected '"@tailwindcss/vite": "^4.3.2"'
     Assert-Contains -Path $PackageJson -Expected '"@vitest/coverage-v8": "4.1.10"'
     Assert-Contains -Path $PackageJson -Expected '"vitest": "4.1.10"'
+    Assert-Contains -Path $PackageJson -Expected '"@testing-library/dom": "^10.0.0"'
     Assert-NotContains -Path $PackageJson -Unexpected '"@vitest/coverage-v8": "^4.1.9"'
     Assert-NotContains -Path $PackageJson -Unexpected '"vitest": "^4.1.9"'
     Assert-Contains -Path $PackageJson -Expected '"test": "vitest run --coverage"'
