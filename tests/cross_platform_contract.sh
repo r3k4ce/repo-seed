@@ -225,8 +225,8 @@ run_bash_web_and_game_install_contract() {
   assert_file_contains "$project_dir/frontend/package.json" '"vitest": "4.1.10"'
   local -a calls
   mapfile -t calls <"$log_path"
-  if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit" ]]; then
-    printf 'Expected web npm call install --no-audit, got: %s\n' "${calls[*]}" >&2
+  if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit --legacy-peer-deps" ]]; then
+    printf 'Expected web npm call install --no-audit --legacy-peer-deps, got: %s\n' "${calls[*]}" >&2
     exit 1
   fi
 
@@ -244,8 +244,8 @@ run_bash_web_and_game_install_contract() {
   popd >/dev/null
 
   mapfile -t calls <"$log_path"
-  if [[ "${#calls[@]}" -ne 2 || "${calls[0]}" != "install --no-audit" || "${calls[1]}" != "exec playwright install chromium" ]]; then
-    printf 'Expected game npm calls install --no-audit then Playwright install, got: %s\n' "${calls[*]}" >&2
+  if [[ "${#calls[@]}" -ne 2 || "${calls[0]}" != "install --no-audit --legacy-peer-deps" || "${calls[1]}" != "exec playwright install chromium" ]]; then
+    printf 'Expected game npm calls install --no-audit --legacy-peer-deps then Playwright install, got: %s\n' "${calls[*]}" >&2
     exit 1
   fi
 

@@ -104,8 +104,8 @@ exit /b 0
     }
 
     $WebNpmCalls = @(Get-Content -LiteralPath $NpmLog)
-    if ($WebNpmCalls.Count -ne 1 -or $WebNpmCalls[0] -ne "install --no-audit") {
-        throw "Expected web npm call install --no-audit, got: $($WebNpmCalls -join ', ')"
+    if ($WebNpmCalls.Count -ne 1 -or $WebNpmCalls[0] -ne "install --no-audit --legacy-peer-deps") {
+        throw "Expected web npm call install --no-audit --legacy-peer-deps, got: $($WebNpmCalls -join ', ')"
     }
 
     $PackageJson = Join-Path $ProjectDir "frontend/package.json"
@@ -186,9 +186,9 @@ exit /b 0
 
     $GameNpmCalls = @(Get-Content -LiteralPath $NpmLog)
     if ($GameNpmCalls.Count -ne 2 -or
-        $GameNpmCalls[0] -ne "install --no-audit" -or
+        $GameNpmCalls[0] -ne "install --no-audit --legacy-peer-deps" -or
         $GameNpmCalls[1] -ne "exec playwright install chromium") {
-        throw "Expected game npm calls install --no-audit then Playwright install, got: $($GameNpmCalls -join ', ')"
+        throw "Expected game npm calls install --no-audit --legacy-peer-deps then Playwright install, got: $($GameNpmCalls -join ', ')"
     }
 
     $GamePackageJson = Join-Path $GameDir "frontend/package.json"

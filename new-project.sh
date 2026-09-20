@@ -1147,7 +1147,7 @@ create_web_or_game_project() {
   write_frontend_files "$web_template_prefix"
 
   pushd frontend >/dev/null
-  invoke_checked npm install --no-audit
+  invoke_checked npm install --no-audit --legacy-peer-deps
   if [[ "$PROFILE" == "game" ]]; then
     invoke_checked npm exec playwright install chromium
   fi
