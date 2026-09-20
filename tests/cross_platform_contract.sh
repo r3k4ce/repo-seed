@@ -221,6 +221,8 @@ run_bash_web_and_game_install_contract() {
     printf 'Expected README.md: %s\n' "$project_dir/README.md" >&2
     exit 1
   }
+  assert_file_contains "$project_dir/frontend/package.json" '"@vitest/coverage-v8": "4.1.10"'
+  assert_file_contains "$project_dir/frontend/package.json" '"vitest": "4.1.10"'
   local -a calls
   mapfile -t calls <"$log_path"
   if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit" ]]; then
@@ -246,6 +248,9 @@ run_bash_web_and_game_install_contract() {
     printf 'Expected game npm calls install --no-audit then Playwright install, got: %s\n' "${calls[*]}" >&2
     exit 1
   fi
+
+  assert_file_not_contains "$game_dir/frontend/package.json" '"vitest"'
+  assert_file_not_contains "$game_dir/frontend/package.json" '"@vitest/coverage-v8"'
 
   rm -rf -- "$tmp_root"
 

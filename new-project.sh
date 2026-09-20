@@ -680,7 +680,7 @@ write_frontend_files() {
     \"@types/react\": \"^19.0.0\",
     \"@types/react-dom\": \"^19.0.0\",
     \"@vitejs/plugin-react\": \"^5.0.0\",
-    \"@vitest/coverage-v8\": \"^4.1.9\",
+    \"@vitest/coverage-v8\": \"4.1.10\",
     \"eslint\": \"^9.0.0\",
     \"eslint-plugin-react-hooks\": \"^7.0.0\",
     \"eslint-plugin-react-refresh\": \"^0.4.0\",
@@ -690,7 +690,7 @@ write_frontend_files() {
     \"typescript\": \"^5.9.0\",
     \"typescript-eslint\": \"^8.0.0\",
     \"vite\": \"^7.0.0\",
-    \"vitest\": \"^4.1.9\"
+    \"vitest\": \"4.1.10\"
   }
 }"
   fi

@@ -66,7 +66,8 @@ assert_web_frontend_config() {
 
   assert_file_contains "$package_json_path" '"tailwindcss": "^4.3.2"'
   assert_file_contains "$package_json_path" '"@tailwindcss/vite": "^4.3.2"'
-  assert_file_contains "$package_json_path" '"@vitest/coverage-v8": "^4.1.9"'
+  assert_file_contains "$package_json_path" '"@vitest/coverage-v8": "4.1.10"'
+  assert_file_contains "$package_json_path" '"vitest": "4.1.10"'
   assert_file_contains "$package_json_path" '"test": "vitest run --coverage"'
   assert_file_contains "$package_json_path" '"test:watch": "vitest"'
   assert_file_not_contains "$package_json_path" '"latest"'

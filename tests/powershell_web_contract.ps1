@@ -123,7 +123,10 @@ exit /b 0
     Assert-Contains -Path $PackageJson -Expected '"react": "^19.0.0"'
     Assert-Contains -Path $PackageJson -Expected '"tailwindcss": "^4.3.2"'
     Assert-Contains -Path $PackageJson -Expected '"@tailwindcss/vite": "^4.3.2"'
-    Assert-Contains -Path $PackageJson -Expected '"@vitest/coverage-v8": "^4.1.9"'
+    Assert-Contains -Path $PackageJson -Expected '"@vitest/coverage-v8": "4.1.10"'
+    Assert-Contains -Path $PackageJson -Expected '"vitest": "4.1.10"'
+    Assert-NotContains -Path $PackageJson -Unexpected '"@vitest/coverage-v8": "^4.1.9"'
+    Assert-NotContains -Path $PackageJson -Unexpected '"vitest": "^4.1.9"'
     Assert-Contains -Path $PackageJson -Expected '"test": "vitest run --coverage"'
     Assert-Contains -Path $PackageJson -Expected '"test:watch": "vitest"'
     Assert-NotContains -Path $PackageJson -Unexpected '"latest"'
@@ -187,6 +190,10 @@ exit /b 0
         $GameNpmCalls[1] -ne "exec playwright install chromium") {
         throw "Expected game npm calls install --no-audit then Playwright install, got: $($GameNpmCalls -join ', ')"
     }
+
+    $GamePackageJson = Join-Path $GameDir "frontend/package.json"
+    Assert-NotContains -Path $GamePackageJson -Unexpected '"vitest"'
+    Assert-NotContains -Path $GamePackageJson -Unexpected '"@vitest/coverage-v8"'
 
     Write-Host "PowerShell web contract passed"
 }
