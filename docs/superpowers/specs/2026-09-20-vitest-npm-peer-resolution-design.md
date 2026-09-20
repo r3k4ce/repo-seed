@@ -33,10 +33,13 @@ backend behavior.
 
 ### Non-goals
 
-- Do not add `--legacy-peer-deps`, `--force`, a global `.npmrc` setting, or an
+- Do not add `--force`, a global `.npmrc` setting, or an
   npm timeout/retry workaround.
 - Do not upgrade or select a different Node.js/npm installation in the
   scaffolder.
+- Do not change generated README setup commands, CI `npm ci`, or lifecycle
+  scripts in this cycle; if they hit the same npm 10 resolver crash, that is
+  separately verified follow-up work.
 - Do not change React, Vite, Tailwind, TypeScript, ESLint, or other dependency
   ranges.
 - Do not change generated README setup commands, GitHub Actions `npm ci`,
@@ -92,19 +95,23 @@ metadata:
 "vitest": "4.1.10"
 ```
 
-The existing initial install remains:
+The initial install becomes:
 
 ```text
-npm install --no-audit
+npm install --no-audit --legacy-peer-deps
 ```
 
-This is the smallest fix that prevents the generator from drifting onto the
-known problematic Vitest peer graph while preserving support for npm 10. It
-does not suppress peer validation or alter the package manager used by the
-user.
+The exact pin alone proved insufficient: a bare `vitest@4.1.10` package
+crashes npm 10.9.8 with the same `edgesOut` null-parent failure in Arborist's
+`#loadPeerSet` (observed peer chain: `vitest@*` through
+`@vitest/browser-playwright` into `jsdom`/`canvas`), while the same package
+installs cleanly with `--legacy-peer-deps`. The crash is in the resolver
+itself, before any peer-conflict validation could run, so the flag bypasses
+only the crashed loader step rather than hiding a real version conflict. The
+exact pin is kept so generated projects still resolve a single known Vitest
+release instead of drifting.
 
-`--legacy-peer-deps` is rejected because npm documents that it completely
-ignores peer dependencies and does not recommend it for normal installs.
+`--force` is rejected because it overrides more safety checks than needed.
 Selecting npm 11 is rejected because it makes the result depend on the
 machine's PATH and does not guarantee that every future peer graph is safe.
 Keeping `^4.1.9` is rejected because a new project can silently select a
@@ -115,7 +122,7 @@ different Vitest graph without any RepoSeed source change.
 1. The user runs the Bash or PowerShell web scaffolder.
 2. The selected generator writes a frontend package containing exact Vitest
    and coverage-provider version `4.1.10`.
-3. The generator invokes the existing npm command with `install --no-audit`.
+3. The generator invokes the existing npm command with `install --no-audit --legacy-peer-deps`.
 4. npm resolves the stable, aligned Vitest peer contract and returns control to
    the generator instead of crashing during `idealTree` construction.
 5. The generator writes the remaining project files and reports the existing
@@ -131,8 +138,8 @@ values are:
 "vitest": "4.1.10"
 ```
 
-The existing npm argument interface remains `install --no-audit` for web and
-game bootstrap installs. The existing game follow-up remains
+The npm argument interface is `install --no-audit --legacy-peer-deps` for web and
+game bootstrap installs (one shared call per generator). The existing game follow-up remains
 `exec playwright install chromium`.
 
 ## Functional Behavior
@@ -141,7 +148,7 @@ game bootstrap installs. The existing game follow-up remains
 
 - Bash and PowerShell generate exact Vitest version `4.1.10` for both Vitest
   and its v8 coverage provider.
-- The initial frontend install continues to pass `--no-audit`.
+- The initial frontend install passes `--no-audit --legacy-peer-deps`.
 - A real fresh web scaffold completes on the affected npm 10 environment.
 - The generated frontend still runs `vitest run --coverage`, typecheck, lint,
   and build in the existing order.
@@ -149,7 +156,7 @@ game bootstrap installs. The existing game follow-up remains
 ### Game profile
 
 - The game package remains unchanged and does not gain Vitest dependencies.
-- The initial game install still receives `install --no-audit`.
+- The initial game install still shares the web bootstrap call, now `install --no-audit --legacy-peer-deps`.
 - The next npm call remains `exec playwright install chromium`.
 
 ### Other profiles and existing projects
@@ -194,14 +201,14 @@ Then `frontend/package.json` contains
 `"@vitest/coverage-v8": "4.1.10"`
 And it contains `"vitest": "4.1.10"`
 And it does not contain either old `^4.1.9` Vitest range
-And the npm call remains exactly `install --no-audit`
+And the npm call is exactly `install --no-audit --legacy-peer-deps`
 
 ### Scenario: Bash web generation pins the compatible Vitest pair
 
 Given a fresh directory and the fake commands used by the Bash contract
 When `new-project.sh --profile web --no-git --no-install-hooks --no-github-actions` runs
 Then `frontend/package.json` contains the same two exact `4.1.10` entries
-And the npm call remains exactly `install --no-audit`
+And the npm call is exactly `install --no-audit --legacy-peer-deps`
 And generation writes `README.md` after the install call
 
 ### Scenario: Real PowerShell web bootstrap completes with npm 10
@@ -216,7 +223,7 @@ And the backend and frontend check, fix, and final check sequence exits 0
 
 Given a fresh game directory and the existing fake commands
 When either scaffolder creates the game project
-Then the first npm call is `install --no-audit`
+Then the first npm call is `install --no-audit --legacy-peer-deps`
 And the next npm call is `exec playwright install chromium`
 And the game package has no Vitest entries introduced by this change
 
@@ -233,7 +240,7 @@ And neither contains a new global audit or peer-dependency setting
 Given the updated checkout and an isolated installer destination
 When the existing `install.ps1` runs with temporary bin and data directories
 Then the managed `new-project.ps1` contains the exact `4.1.10` pair
-And it contains the existing `install --no-audit` bootstrap call
+And it contains the `install --no-audit --legacy-peer-deps` bootstrap call
 And its wrapper points to that managed script
 
 ### Scenario: Non-web profiles remain unchanged

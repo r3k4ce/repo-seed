@@ -4,7 +4,7 @@
 
 **Goal:** Make fresh RepoSeed web projects install the supported Vitest toolchain successfully with npm 10 instead of crashing in npm Arborist's peer resolver.
 
-**Architecture:** Keep the Bash and PowerShell scaffolders independent. Replace only the two web Vitest caret ranges with the aligned exact `4.1.10` pair, preserve the existing `npm install --no-audit` call, and extend the existing contract/e2e assertions. Do not add a peer-dependency bypass or a shared abstraction.
+**Architecture:** Keep the Bash and PowerShell scaffolders independent. Replace only the two web Vitest caret ranges with the aligned exact `4.1.10` pair, pass `--legacy-peer-deps` on the single shared web/game bootstrap install call alongside the existing `--no-audit`, and extend the existing contract/e2e assertions. Do not add a shared abstraction.
 
 **Tech Stack:** PowerShell 7, Bash/Git Bash, npm 10.9.8, Node.js 22, uv, React 19, Vite 7, Vitest 4.1.10, existing contract and scaffold e2e scripts.
 
@@ -12,8 +12,8 @@
 
 - Generated web `@vitest/coverage-v8` must be exactly `4.1.10`.
 - Generated web `vitest` must be exactly `4.1.10`.
-- Initial web/game frontend installation must remain `npm install --no-audit` or the PowerShell equivalent using `$NpmCommand`.
-- Do not add `--legacy-peer-deps`, `--force`, an `.npmrc` setting, an npm upgrade, or an npm retry/timeout workaround.
+- Initial web/game frontend installation must be `npm install --no-audit --legacy-peer-deps` or the PowerShell equivalent using `$NpmCommand` (one shared call per generator; `--legacy-peer-deps` bypasses npm 10's crashed `#loadPeerSet` peer loader, verified against bare `vitest@4.1.10`).
+- Do not add `--force`, an `.npmrc` setting, an npm upgrade, or an npm retry/timeout workaround.
 - Do not change React, Vite, Tailwind, TypeScript, ESLint, or other dependency ranges.
 - Do not change generated README `npm install`, CI `npm ci`, lifecycle scripts, lockfile behavior, Playwright installation, or non-web profiles.
 - Keep existing checked-command helpers and nonzero exit propagation unchanged.
@@ -65,7 +65,7 @@ game package, or new test file is modified.
 | Bash web package uses exact `4.1.10` pair | `tests/cross_platform_contract.sh` asserts both literal package lines after the fake install. |
 | npm 10 real web bootstrap no longer crashes | `tests/scaffold_e2e.ps1` completes the real install and generated check/fix/check sequence with exit 0. |
 | Bash real web bootstrap remains healthy | `tests/scaffold_e2e.sh` completes its existing web check/fix/check sequence with exit 0. |
-| Web/game npm calls remain correct and game stays Vitest-free | Existing fake npm log assertions plus literal game-package absence assertions in `tests/powershell_web_contract.ps1` and `tests/cross_platform_contract.sh`. |
+| Web/game npm calls use the bypass and game stays Vitest-free | Fake npm log assertions expect `install --no-audit --legacy-peer-deps` (Task 2) plus literal game-package absence assertions in `tests/powershell_web_contract.ps1` and `tests/cross_platform_contract.sh`. |
 | CI and README behavior stays unchanged | Final scope search confirms only the two package lines changed; existing generated CI/artifact assertions remain in the contracts/e2e tests. |
 | Installer copies the corrected source | Isolated `install.ps1` verification reads the managed payload and wrapper target. |
 | Non-web profiles stay unchanged | Production diff scope plus existing base contract; no non-web generation lines are touched. |
@@ -95,7 +95,7 @@ game package, or new test file is modified.
 
 - Consumes: Existing `new-project.ps1 -Profile web`, `new-project.sh --profile web`, fake `uv`/`npm` commands, and real npm/uv e2e tools.
 - Produces: Generated web package lines exactly `"@vitest/coverage-v8": "4.1.10"` and `"vitest": "4.1.10"`.
-- Preserves: Initial npm argument sequence `install --no-audit`; game sequence `install --no-audit` then `exec playwright install chromium`; all existing generated check, CI, README, and backend interfaces.
+- Preserves: Initial npm argument sequence `install --no-audit --legacy-peer-deps`; game sequence `install --no-audit --legacy-peer-deps` then `exec playwright install chromium`; all existing generated check, CI, README, and backend interfaces.
 
 - [ ] **Step 1: Add the failing exact-version assertions before production changes**
 
@@ -332,11 +332,108 @@ against the final edit. No check may be left for a later task.
 - Expected known failures: none at the final task boundary.
 - Resulting state: both scaffolders emit exact aligned Vitest `4.1.10`, retain npm audit opt-out and all existing profile behavior, and the next stage may perform the final whole-branch review.
 
+### Task 1 status
+
+Implemented in commit `43b1b41` (exact `4.1.10` pair in both generators plus the four test-file assertion updates). Fast contracts, syntax/parse/help, and installer-copy checks pass at that commit; the real e2e still fails there because the pin alone cannot bypass npm 10's crashed peer loader. Task 2 below completes the fix; the two commits are reviewed together.
+
+### Task 2: Bypass npm 10's Crashed Peer Loader on the Bootstrap Install
+
+**Task Position**
+
+- **Feature goal:** Fresh web scaffolds complete frontend installation on npm 10 without the Vitest peer-resolution crash.
+- **Previously:** Task 1 (commit `43b1b41`) pins both generators to exact aligned Vitest `4.1.10` and proves the package output in all four web contract/e2e tests. Controller-verified root cause: bare `vitest@4.1.10` crashes npm 10.9.8 `#loadPeerSet` identically, while `--legacy-peer-deps` installs it cleanly, so the resolver itself is the fault and the bypass is the verified fix.
+- **Current:** Add `--legacy-peer-deps` to the single shared web/game bootstrap install call in each generator, update the fake-npm call assertions to the new argument sequence, and prove the real npm 10 install plus managed payload.
+- **Next:** Final whole-branch review will inspect the complete diff (Task 1 + Task 2) against the amended spec and rerun the final verification set.
+- **Do not do yet:** Do not change `--force`, `.npmrc`, npm selection, installer implementation, CI `npm ci`, README install strings, lifecycle scripts, any dependency value, game behavior, non-web profiles, or historical artifacts.
+
+**Files:**
+
+- Modify: `new-project.ps1:596`, the shared web/game `Invoke-Checked $NpmCommand install --no-audit` call.
+- Modify: `new-project.sh:1150`, the shared web/game `invoke_checked npm install --no-audit` call.
+- Modify: `tests/powershell_web_contract.ps1:106-109,184-189`, existing web/game fake npm call assertions.
+- Modify: `tests/cross_platform_contract.sh:224-229,244-248`, existing web/game fake npm call assertions.
+- Modify: Task 1's installer-copy check expectation (already in this plan's Step 7 pattern): managed payload must contain `Invoke-Checked $NpmCommand install --no-audit --legacy-peer-deps`.
+
+**Interfaces:**
+
+- Consumes: Existing shared bootstrap calls, fake `npm` log assertions, real npm/uv e2e tools.
+- Produces: Bootstrap argument sequence exactly `install --no-audit --legacy-peer-deps`; game follow-up unchanged (`exec playwright install chromium`).
+- Preserves: Exact `4.1.10` Vitest pair, all generated check/CI/README/backend interfaces, nonzero exit propagation.
+
+- [ ] **Step 1: Update the npm-call assertions first (RED)**
+
+In `tests/powershell_web_contract.ps1`, change the web expectation from `"install --no-audit"` to `"install --no-audit --legacy-peer-deps"` and the game first-call expectation likewise; the game second call stays `"exec playwright install chromium"`. Keep the exact-count checks (`Count -ne 1` / `-ne 2`) unchanged.
+
+In `tests/cross_platform_contract.sh`, change `"install --no-audit"` to `"install --no-audit --legacy-peer-deps"` in both the web single-call check and the game two-call check; the Playwright expectation stays unchanged.
+
+Do not touch generator lines yet.
+
+- [ ] **Step 2: Run the focused tests to verify RED**
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File tests\powershell_web_contract.ps1
+& "$env:USERPROFILE\scoop\apps\git\current\bin\bash.exe" tests/cross_platform_contract.sh
+```
+
+Expected: each fails on its npm-call assertion because the generators still emit `install --no-audit` without the flag.
+
+- [ ] **Step 3: Make the minimum generator changes**
+
+In `new-project.ps1`, line 596 becomes:
+
+```powershell
+Invoke-Checked $NpmCommand install --no-audit --legacy-peer-deps
+```
+
+In `new-project.sh`, line 1150 becomes:
+
+```bash
+invoke_checked npm install --no-audit --legacy-peer-deps
+```
+
+No other generator line changes.
+
+- [ ] **Step 4: Run the focused tests to verify GREEN**
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File tests\powershell_web_contract.ps1
+& "$env:USERPROFILE\scoop\apps\git\current\bin\bash.exe" tests/cross_platform_contract.sh
+```
+
+Expected: both exit 0 with their existing success messages.
+
+- [ ] **Step 5: Run syntax, parse, and command-shape checks** (same commands as Task 1 Step 5; all exit 0).
+
+- [ ] **Step 6: Run the real affected scaffold regressions** (same commands as Task 1 Step 6). Expected now: `tests\scaffold_e2e.ps1` completes the real npm 10 install without `edgesOut` and prints `PowerShell web scaffold e2e passed`; `tests/scaffold_e2e.sh` ends `all scaffold e2e tests passed`. If either still fails, stop and escalate — do not stack further workarounds.
+
+- [ ] **Step 7: Verify the existing installer copies the corrected payload** using Task 1's Step 7 script, except the bootstrap assertion becomes:
+
+```powershell
+if (-not $ManagedText.Contains('Invoke-Checked $NpmCommand install --no-audit --legacy-peer-deps')) { throw "Managed npm bootstrap is stale." }
+```
+
+The user's `%LOCALAPPDATA%\RepoSeed` installation stays untouched.
+
+- [ ] **Step 8: Inspect the final scope and preserved behavior** using Task 1's Step 8 search. Confirm: only the two Vitest values plus the one bootstrap flag per generator changed; game Playwright args, README install strings, and CI `npm ci` strings unchanged; no `--force`, `.npmrc`, npm selection, or unrelated profile change appears.
+
+- [ ] **Step 9: Perform implementer self-review and final task verification** per Task 1 Step 9, covering both Task 1 and Task 2 changes against the amended spec.
+
+**Task Boundary Verification:**
+
+- Focused PowerShell and Bash contracts exit 0 and assert the `install --no-audit --legacy-peer-deps` sequence plus the exact `4.1.10` pair and Vitest-free game package.
+- Bash syntax and PowerShell parser/help checks exit 0.
+- PowerShell and Bash real web e2e checks exit 0 with their existing success messages.
+- Isolated installer copy verification exits 0 and confirms the managed payload has the `4.1.10` pair and the flagged bootstrap call.
+- `git diff --check` exits 0 apart from the pre-existing untouched CRLF warning, if still reported.
+- Expected test changes: two contract files gain the flag in their npm-call assertions (Task 1's version assertions already in place); no test files created or removed.
+- Expected known failures: none at the final task boundary.
+- Resulting state: both scaffolders emit exact aligned Vitest `4.1.10` and bootstrap with `install --no-audit --legacy-peer-deps`; the next stage performs the final whole-branch review.
+
 ## Final Plan Audit
 
-- Every spec acceptance scenario maps to a concrete assertion or direct command in the task.
-- Every planned file exists and every referenced symbol/line was revalidated against the current checkout.
-- The task is one unit because production version changes and all affected generated-package assertions must become green together.
-- No task introduces a dependency, public option, global config, peer bypass, or unrelated cleanup.
-- The implementation decision load is mechanical: replace the two named values, update named literal assertions, and run the named commands.
-- The planned final state was checked for stale `^4.1.9` assertions, unchanged npm/CI/README/game paths, syntax/tooling conformance, and green task boundaries.
+- Every spec acceptance scenario maps to a concrete assertion or direct command across Task 1 and Task 2.
+- Every planned file exists and every referenced symbol/line was revalidated against the current checkout (call sites `new-project.ps1:596`, `new-project.sh:1150` read directly).
+- Task 1 and Task 2 are separate units because Task 1 is already committed and green on fast checks; Task 2 owns only the bootstrap flag and its call-sequence assertions.
+- No task introduces a dependency, public option, global config, or unrelated cleanup; the single `--legacy-peer-deps` flag is the user-authorized crash fix, verified against bare `vitest@4.1.10` before planning.
+- The implementation decision load is mechanical: append the named flag, update named literal assertions, and run the named commands.
+- The planned final state was checked for stale `^4.1.9` assertions, unchanged CI/README/game paths, syntax/tooling conformance, and green task boundaries.
