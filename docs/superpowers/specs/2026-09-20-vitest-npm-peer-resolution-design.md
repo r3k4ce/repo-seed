@@ -41,7 +41,8 @@ backend behavior.
   scripts in this cycle; if they hit the same npm 10 resolver crash, that is
   separately verified follow-up work.
 - Do not change React, Vite, Tailwind, TypeScript, ESLint, or other dependency
-  ranges.
+  ranges, except the one explicit `@testing-library/dom` addition below that
+  the bypass requires.
 - Do not change generated README setup commands, GitHub Actions `npm ci`,
   package lifecycle scripts, or lockfile behavior.
 - Do not change the game, base, desktop, or existing-project paths.
@@ -111,6 +112,21 @@ only the crashed loader step rather than hiding a real version conflict. The
 exact pin is kept so generated projects still resolve a single known Vitest
 release instead of drifting.
 
+The bypass has one known cost that is fixed at the source: strict npm used to
+auto-install `@testing-library/dom@^10` as a peer of
+`@testing-library/react@16` (no `jest-dom@6` release lists it as a regular
+dependency, verified via registry metadata), and legacy mode skips that
+auto-install, so the generated `App.test.tsx` fails with `Cannot find module
+'@testing-library/dom'`. The generator therefore declares the peer explicitly:
+
+```json
+"@testing-library/dom": "^10.0.0",
+```
+
+placed alphabetically before `@testing-library/jest-dom` in web
+`devDependencies`. The range matches the peer range every `react@16` release
+declares, so it installs identically under strict and legacy resolution.
+
 `--force` is rejected because it overrides more safety checks than needed.
 Selecting npm 11 is rejected because it makes the result depend on the
 machine's PATH and does not guarantee that every future peer graph is safe.
@@ -148,6 +164,8 @@ game bootstrap installs (one shared call per generator). The existing game follo
 
 - Bash and PowerShell generate exact Vitest version `4.1.10` for both Vitest
   and its v8 coverage provider.
+- Bash and PowerShell generate explicit `@testing-library/dom` version
+  `^10.0.0` in web `devDependencies`.
 - The initial frontend install passes `--no-audit --legacy-peer-deps`.
 - A real fresh web scaffold completes on the affected npm 10 environment.
 - The generated frontend still runs `vitest run --coverage`, typecheck, lint,
@@ -200,6 +218,7 @@ When `new-project.ps1 -Profile web -NoGit -NoInstallHooks` runs
 Then `frontend/package.json` contains
 `"@vitest/coverage-v8": "4.1.10"`
 And it contains `"vitest": "4.1.10"`
+And it contains `"@testing-library/dom": "^10.0.0"`
 And it does not contain either old `^4.1.9` Vitest range
 And the npm call is exactly `install --no-audit --legacy-peer-deps`
 
@@ -207,7 +226,7 @@ And the npm call is exactly `install --no-audit --legacy-peer-deps`
 
 Given a fresh directory and the fake commands used by the Bash contract
 When `new-project.sh --profile web --no-git --no-install-hooks --no-github-actions` runs
-Then `frontend/package.json` contains the same two exact `4.1.10` entries
+Then `frontend/package.json` contains the same two exact `4.1.10` entries plus `"@testing-library/dom": "^10.0.0"`
 And the npm call is exactly `install --no-audit --legacy-peer-deps`
 And generation writes `README.md` after the install call
 
@@ -253,18 +272,22 @@ And its existing generated files and checks remain unchanged
 ## Testing Strategy
 
 - `tests/powershell_web_contract.ps1` remains the fast native Windows
-  contract. It asserts both exact package entries, the existing generated web
+  contract. It asserts both exact package entries, the explicit
+  `@testing-library/dom` entry, the existing generated web
   artifact contract, the absence of Vitest entries from the game package, and
   the web/game npm argument sequences.
 - `tests/cross_platform_contract.sh` remains the fast Bash contract. Its fake
-  npm path asserts the exact web package entries, the absence of Vitest entries
+  npm path asserts the exact web package entries, the explicit dom entry,
+  the absence of Vitest entries
   from the game package, and existing web/game command sequences; its Git Bash
   PowerShell subsection behavior remains unchanged.
 - `tests/scaffold_e2e.ps1` performs the real Windows dependency install and
   generated `check -> fix -> check` sequence. It is the direct regression for
   the reported npm 10 crash.
 - `tests/scaffold_e2e.sh` performs the existing real Bash web regression and
-  reasserts the exact package entries.
+  reasserts the exact package entries plus the explicit dom entry. Both real
+  e2es must exit 0; the fast contracts pin the dependency so a missing entry
+  is caught without a real install.
 - PowerShell parsing, Bash syntax checks, command help, installer-copy
   verification, `git diff --check`, and the existing scope search cover script
   integrity and excluded behavior.

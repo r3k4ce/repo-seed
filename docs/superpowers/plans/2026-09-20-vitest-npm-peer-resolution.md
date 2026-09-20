@@ -12,9 +12,10 @@
 
 - Generated web `@vitest/coverage-v8` must be exactly `4.1.10`.
 - Generated web `vitest` must be exactly `4.1.10`.
+- Generated web `@testing-library/dom` must be exactly `^10.0.0` (explicit peer of `@testing-library/react@16` that legacy resolution no longer auto-installs).
 - Initial web/game frontend installation must be `npm install --no-audit --legacy-peer-deps` or the PowerShell equivalent using `$NpmCommand` (one shared call per generator; `--legacy-peer-deps` bypasses npm 10's crashed `#loadPeerSet` peer loader, verified against bare `vitest@4.1.10`).
 - Do not add `--force`, an `.npmrc` setting, an npm upgrade, or an npm retry/timeout workaround.
-- Do not change React, Vite, Tailwind, TypeScript, ESLint, or other dependency ranges.
+- Do not change React, Vite, Tailwind, TypeScript, ESLint, or other dependency ranges, except the `@testing-library/dom` `^10.0.0` addition above.
 - Do not change generated README `npm install`, CI `npm ci`, lifecycle scripts, lockfile behavior, Playwright installation, or non-web profiles.
 - Keep existing checked-command helpers and nonzero exit propagation unchanged.
 - Keep the Bash and PowerShell generators independent; do not introduce a dependency or shared package-generation helper.
@@ -66,6 +67,7 @@ game package, or new test file is modified.
 | npm 10 real web bootstrap no longer crashes | `tests/scaffold_e2e.ps1` completes the real install and generated check/fix/check sequence with exit 0. |
 | Bash real web bootstrap remains healthy | `tests/scaffold_e2e.sh` completes its existing web check/fix/check sequence with exit 0. |
 | Web/game npm calls use the bypass and game stays Vitest-free | Fake npm log assertions expect `install --no-audit --legacy-peer-deps` (Task 2) plus literal game-package absence assertions in `tests/powershell_web_contract.ps1` and `tests/cross_platform_contract.sh`. |
+| Explicit dom peer declared | All four web contract/e2e tests assert `"@testing-library/dom": "^10.0.0"` (Task 3); both real e2es prove the generated vitest run finds it. |
 | CI and README behavior stays unchanged | Final scope search confirms only the two package lines changed; existing generated CI/artifact assertions remain in the contracts/e2e tests. |
 | Installer copies the corrected source | Isolated `install.ps1` verification reads the managed payload and wrapper target. |
 | Non-web profiles stay unchanged | Production diff scope plus existing base contract; no non-web generation lines are touched. |
@@ -334,7 +336,11 @@ against the final edit. No check may be left for a later task.
 
 ### Task 1 status
 
-Implemented in commit `43b1b41` (exact `4.1.10` pair in both generators plus the four test-file assertion updates). Fast contracts, syntax/parse/help, and installer-copy checks pass at that commit; the real e2e still fails there because the pin alone cannot bypass npm 10's crashed peer loader. Task 2 below completes the fix; the two commits are reviewed together.
+Implemented in commit `43b1b41` (exact `4.1.10` pair in both generators plus the four test-file assertion updates). Fast contracts, syntax/parse/help, and installer-copy checks pass at that commit; the real e2e still fails there because the pin alone cannot bypass npm 10's crashed peer loader. Tasks 2 and 3 below complete the fix; all three commits are reviewed together.
+
+### Task 2 status
+
+Implemented but uncommitted in the working tree (flag on both bootstrap calls plus the four npm-call assertion updates; exactly 6 changed lines). Fast contracts, syntax/parse/help pass in that state and the PowerShell real e2e exits 0, but the Bash real e2e fails because legacy resolution no longer auto-installs the `@testing-library/dom` peer. Task 3 below adds the explicit peer; Task 2 is committed together with Task 3 (one commit per task).
 
 ### Task 2: Bypass npm 10's Crashed Peer Loader on the Bootstrap Install
 
@@ -429,11 +435,106 @@ The user's `%LOCALAPPDATA%\RepoSeed` installation stays untouched.
 - Expected known failures: none at the final task boundary.
 - Resulting state: both scaffolders emit exact aligned Vitest `4.1.10` and bootstrap with `install --no-audit --legacy-peer-deps`; the next stage performs the final whole-branch review.
 
+### Task 3: Declare the `@testing-library/dom` Peer Explicitly
+
+**Task Position**
+
+- **Feature goal:** Fresh web scaffolds complete frontend installation on npm 10 without the Vitest peer-resolution crash.
+- **Previously:** Task 1 (commit `43b1b41`) pins exact Vitest `4.1.10`. Task 2 (uncommitted working tree, 6 lines) adds `--legacy-peer-deps` to both bootstrap calls and updates the four npm-call assertions; fast contracts and the PowerShell real e2e pass there, but the Bash real e2e fails with `Cannot find module '@testing-library/dom'`. Controller-verified root cause from registry metadata: every `@testing-library/react@16` declares `'@testing-library/dom': '^10.0.0'` as a peer and no `jest-dom@6` lists it as a regular dependency, so legacy mode installs nothing for it.
+- **Current:** Add `"@testing-library/dom": "^10.0.0"` to both web `devDependencies` blocks (alphabetical slot before `@testing-library/jest-dom`), assert it in all four web contract/e2e tests, commit Task 2 and Task 3 as separate commits, and prove both real e2es exit 0.
+- **Next:** Final whole-branch review will inspect the complete diff (Tasks 1-3) against the amended spec and rerun the final verification set.
+- **Do not do yet:** Do not change `--force`, `.npmrc`, npm selection, installer implementation, CI `npm ci`, README install strings, lifecycle scripts, any other dependency value, game behavior, non-web profiles, or historical artifacts.
+
+**Files:**
+
+- Modify: `new-project.ps1:353` (insert before the `@testing-library/jest-dom` line).
+- Modify: `new-project.sh:678` (insert before the escaped `@testing-library/jest-dom` line).
+- Modify: `tests/powershell_web_contract.ps1`, `tests/cross_platform_contract.sh`, `tests/scaffold_e2e.ps1`, `tests/scaffold_e2e.sh` — add the dom assertion next to the existing exact-version assertions.
+- Commit: Task 2's 6 working-tree lines as one commit, then Task 3's changes as a second commit. Do not push.
+
+**Interfaces:**
+
+- Consumes: Existing web `devDependencies` blocks, literal `Contains`/substring assertion helpers, real npm/uv e2e tools.
+- Produces: Generated web package line exactly `"@testing-library/dom": "^10.0.0"`.
+- Preserves: Exact `4.1.10` pair, flagged bootstrap sequence, game/Vitest-free package, CI/README/backend interfaces.
+
+- [ ] **Step 1: Add the dom assertions first (RED)**
+
+In `tests/powershell_web_contract.ps1` and `tests/scaffold_e2e.ps1`, add next to the `4.1.10` assertions:
+
+```powershell
+Assert-Contains -Path $PackageJson -Expected '"@testing-library/dom": "^10.0.0"'
+```
+
+In `tests/cross_platform_contract.sh` (next to the web `4.1.10` assertions) and `tests/scaffold_e2e.sh` (in `assert_web_frontend_config`), add:
+
+```bash
+assert_file_contains "$project_dir/frontend/package.json" '"@testing-library/dom": "^10.0.0"'
+```
+
+using each file's existing package-path variable. Do not touch generator lines yet.
+
+- [ ] **Step 2: Run the focused tests to verify RED**
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File tests\powershell_web_contract.ps1
+& "$env:USERPROFILE\scoop\apps\git\current\bin\bash.exe" tests/cross_platform_contract.sh
+```
+
+Expected: each fails on the new dom assertion because the generators do not emit it yet.
+
+- [ ] **Step 3: Make the minimum generator changes**
+
+In `new-project.ps1`, insert alphabetically before the jest-dom line:
+
+```powershell
+    "@testing-library/dom": "^10.0.0",
+```
+
+In `new-project.sh`, insert the escaped equivalent before the jest-dom line:
+
+```bash
+    \"@testing-library/dom\": \"^10.0.0\",
+```
+
+No other generator line changes.
+
+- [ ] **Step 4: Run the focused tests to verify GREEN** (same two commands; both exit 0 with existing success messages).
+
+- [ ] **Step 5: Run syntax, parse, and command-shape checks** (same commands as Task 1 Step 5; all exit 0).
+
+- [ ] **Step 6: Run the real affected scaffold regressions** (same commands as Task 1 Step 6). Expected now: both `tests\scaffold_e2e.ps1` (`PowerShell web scaffold e2e passed`) and `tests/scaffold_e2e.sh` (`all scaffold e2e tests passed`) exit 0 — the Bash web `check.sh` vitest run must find `@testing-library/dom`. If either still fails, stop and report BLOCKED with the error — do not stack further workarounds.
+
+- [ ] **Step 7: Verify the existing installer copies the corrected payload** using Task 1's Step 7 script with Task 2's flagged bootstrap assertion, plus:
+
+```powershell
+if (-not $ManagedText.Contains('"@testing-library/dom": "^10.0.0"')) { throw "Managed testing-library version is stale." }
+```
+
+The user's `%LOCALAPPDATA%\RepoSeed` installation stays untouched.
+
+- [ ] **Step 8: Inspect the final scope and preserved behavior** using Task 1's Step 8 search (extend the pattern with `testing-library/dom`). Confirm: only the two Vitest values, the one bootstrap flag per generator, and the one dom line per generator changed; game Playwright args, README install strings, and CI `npm ci` strings unchanged; no `--force`, `.npmrc`, npm selection, or unrelated profile change appears.
+
+- [ ] **Step 9: Commit as two task commits, then self-review and verify**
+
+Commit Task 2's pre-existing 6 working-tree lines first (message like `fix(web): bypass crashed npm 10 peer loader on bootstrap install`), then Task 3's changes (message like `fix(web): declare testing-library/dom peer explicitly`). Do not push. Then perform implementer self-review of the combined Tasks 1-3 diff against the amended spec and rerun the full verification set against the final state before reporting.
+
+**Task Boundary Verification:**
+
+- Focused PowerShell and Bash contracts exit 0 and assert the `4.1.10` pair, the dom `^10.0.0` line, the flagged bootstrap sequence, and the Vitest-free game package.
+- Bash syntax and PowerShell parser/help checks exit 0.
+- PowerShell and Bash real web e2e checks exit 0 with their existing success messages.
+- Isolated installer copy verification exits 0 and confirms the managed payload has the `4.1.10` pair, the dom line, and the flagged bootstrap call.
+- `git diff --check` (or `git status` + `git diff --check` on the final state) is clean apart from the pre-existing untouched CRLF warning, if still reported.
+- Expected test changes: four contract/e2e files assert the dom line; no test files created or removed.
+- Expected known failures: none at the final task boundary.
+- Resulting state: both scaffolders emit exact Vitest `4.1.10`, explicit dom `^10.0.0`, and bootstrap with `install --no-audit --legacy-peer-deps`; the next stage performs the final whole-branch review.
+
 ## Final Plan Audit
 
-- Every spec acceptance scenario maps to a concrete assertion or direct command across Task 1 and Task 2.
-- Every planned file exists and every referenced symbol/line was revalidated against the current checkout (call sites `new-project.ps1:596`, `new-project.sh:1150` read directly).
-- Task 1 and Task 2 are separate units because Task 1 is already committed and green on fast checks; Task 2 owns only the bootstrap flag and its call-sequence assertions.
-- No task introduces a dependency, public option, global config, or unrelated cleanup; the single `--legacy-peer-deps` flag is the user-authorized crash fix, verified against bare `vitest@4.1.10` before planning.
-- The implementation decision load is mechanical: append the named flag, update named literal assertions, and run the named commands.
+- Every spec acceptance scenario maps to a concrete assertion or direct command across Tasks 1-3.
+- Every planned file exists and every referenced symbol/line was revalidated against the current checkout (dev blocks `new-project.ps1:350-369`, `new-project.sh:675-694`; call sites `new-project.ps1:596`, `new-project.sh:1150` read directly).
+- Task 1 is committed; Task 2 is implemented-uncommitted with passing fast checks; Task 3 owns only the dom line and its assertions, then commits Task 2 and Task 3 separately.
+- No task introduces a public option, global config, or unrelated cleanup; the flag is the user-authorized crash fix and the dom line is its verified required peer, both evidenced from the registry before planning.
+- The implementation decision load is mechanical: insert the named line in the named slot, update named literal assertions, and run the named commands.
 - The planned final state was checked for stale `^4.1.9` assertions, unchanged CI/README/game paths, syntax/tooling conformance, and green task boundaries.
