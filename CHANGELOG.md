@@ -9,6 +9,8 @@ See the README for the current project description and usage.
 
 - Scaffolders no longer generate `AGENTS.md` in new projects, and the
   `templates/agents/` templates have been removed.
+- Scaffolders no longer generate `docs/project-memory.yaml` (or a `docs/`
+  folder) in new projects, and generated READMEs no longer have a Docs section.
 
 ### Changed
 

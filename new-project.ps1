@@ -207,8 +207,6 @@ if ($Profile -in @("web", "game")) {
     $NpmCommand = Get-NpmCommand
     $WebTemplatePrefix = if ($Profile -eq "game") { "game" } else { "web" }
     $FrontendDescription = if ($Profile -eq "game") { "Phaser game frontend" } else { "React TypeScript frontend" }
-    $MemorySummary = if ($Profile -eq "game") { "Created initial game scaffold." } else { "Created initial web app scaffold." }
-    $MemoryChanged = if ($Profile -eq "game") { "Initial FastAPI backend, Phaser frontend, checks, CI, hooks, and memory file." } else { "Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, and memory file." }
     $BackendTestTemplate = if ($Profile -eq "game") { "game/test_game_api.py" } else { "web/test_health.py" }
     $BackendTestPath = if ($Profile -eq "game") { "test_game_api.py" } else { "test_health.py" }
 
@@ -891,25 +889,6 @@ Backend source lives in backend/src/$BackendPackageName/. Frontend source lives 
     .\scripts\fix.ps1
     Push-Location backend; uv run uvicorn $BackendPackageName.main:app --reload; Pop-Location
     Push-Location frontend; npm run dev; Pop-Location
-
-## Docs
-
-Project memory lives in docs/project-memory.yaml.
-"@
-
-    $Now = Get-Date
-    $TimeUtc = $Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    $TimeLocal = $Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
-
-    Write-TextFile -Path (Join-Path "docs" "project-memory.yaml") -Content @"
-entries:
-  - time_utc: "$TimeUtc"
-    time_local: "$TimeLocal"
-    summary: "$MemorySummary"
-    changed:
-      - "$MemoryChanged"
-    verification:
-      - 'Not run yet; run .\scripts\check.ps1 before first commit.'
 "@
 
     Write-TextFile -Path ".pre-commit-config.yaml" -Content @'
@@ -1425,25 +1404,6 @@ Copy .env.example to .env only when real secrets are needed. Never commit .env.
 $SourceDescription
 
 $ReadmeCommands
-
-## Docs
-
-Project memory lives in docs/project-memory.yaml.
-"@
-
-$Now = Get-Date
-$TimeUtc = $Now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-$TimeLocal = $Now.ToString("yyyy-MM-ddTHH:mm:sszzz")
-
-Write-TextFile -Path (Join-Path "docs" "project-memory.yaml") -Content @"
-entries:
-  - time_utc: "$TimeUtc"
-    time_local: "$TimeLocal"
-    summary: "Created initial $Profile scaffold."
-    changed:
-      - "Initial $Profile project, tests, checks, CI, hooks, and memory file."
-    verification:
-      - 'Not run yet; run .\scripts\check.ps1 before first commit.'
 "@
 
 if (-not $NoGitHubActions) {
