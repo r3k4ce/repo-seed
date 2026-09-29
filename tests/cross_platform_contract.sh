@@ -34,6 +34,11 @@ prepend_fake_uv() {
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1-}" == "--version" ]]; then
+  printf 'uv 99.0.0 (fake)\n'
+  exit 0
+fi
+
 if [[ "${1-}" == "init" ]]; then
   project_dir="."
   package_name="python_project"
@@ -100,6 +105,10 @@ run_bash_install_contract() {
     printf 'Expected templates in payload.\n' >&2
     exit 1
   }
+  [[ -f "$data_dir/versions.env" ]] || {
+    printf 'Expected versions.env in payload.\n' >&2
+    exit 1
+  }
 
   assert_file_contains "$wrapper" 'new-project.sh'
 }
@@ -115,6 +124,7 @@ run_windows_installer_static_contract() {
   assert_file_contains "$installer_path" 'Microsoft\WindowsApps'
   assert_file_contains "$installer_path" 'RepoSeed'
   assert_file_contains "$installer_path" 'new-project.ps1'
+  assert_file_contains "$installer_path" 'versions.env'
   assert_file_contains "$installer_path" '$Command.ps1'
 }
 
