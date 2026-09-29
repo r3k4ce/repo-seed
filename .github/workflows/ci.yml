@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
     # Weekly drift check: scaffolds real projects against live registries so a
