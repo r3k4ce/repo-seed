@@ -24,6 +24,31 @@ function Assert-NotContains {
     }
 }
 
+# Reads one KEY from versions.env so assertions follow the manifest instead of
+# hard-coding version numbers that would drift.
+$VersionsPath = Join-Path $PSScriptRoot "..\versions.env"
+function Get-Pinned {
+    param([Parameter(Mandatory)] [string]$Key)
+
+    foreach ($line in [System.IO.File]::ReadAllLines($VersionsPath)) {
+        if ($line -match "^$Key=([A-Za-z0-9.+-]+)\s*$") {
+            return $Matches[1]
+        }
+    }
+
+    throw "versions.env is missing $Key"
+}
+
+function Assert-ExactPinsOnly {
+    param([Parameter(Mandatory)] [string]$Path)
+
+    Assert-NotContains -Path $Path -Unexpected '"latest"'
+    $content = Get-Content -Raw -LiteralPath $Path
+    if ($content -match '": *"[\^~*]') {
+        throw "Expected only exact version pins in $Path"
+    }
+}
+
 function Assert-InOrder {
     param(
         [Parameter(Mandatory)] [string]$Path,
@@ -61,8 +86,18 @@ try {
 exit /b 0
 "@
 
+    Set-Content -LiteralPath (Join-Path $BinDir "node.cmd") -Value @"
+@echo off
+if /I "%~1"=="--version" echo v99.0.0
+exit /b 0
+"@
+
     Set-Content -LiteralPath (Join-Path $BinDir "uv.cmd") -Value @"
 @echo off
+if /I "%~1"=="--version" (
+  echo uv 99.0.0 ^(fake^)
+  exit /b 0
+)
 if /I not "%~1"=="init" exit /b 0
 set "package=python_project"
 set "project=."
@@ -110,13 +145,17 @@ exit /b 0
         throw "Expected no AGENTS.md in generated project: $AgentsFile"
     }
 
-    Assert-Contains -Path $PackageJson -Expected '"react": "^19.0.0"'
-    Assert-Contains -Path $PackageJson -Expected '"tailwindcss": "^4.3.2"'
-    Assert-Contains -Path $PackageJson -Expected '"@tailwindcss/vite": "^4.3.2"'
-    Assert-Contains -Path $PackageJson -Expected '"@vitest/coverage-v8": "^4.1.9"'
+    Assert-ExactPinsOnly -Path $PackageJson
+    Assert-Contains -Path $PackageJson -Expected ('"react": "' + (Get-Pinned "NPM_REACT") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"tailwindcss": "' + (Get-Pinned "NPM_TAILWINDCSS") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"@tailwindcss/vite": "' + (Get-Pinned "NPM_TAILWINDCSS_VITE") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"vite": "' + (Get-Pinned "NPM_VITE") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"vitest": "' + (Get-Pinned "NPM_VITEST") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"@vitest/coverage-v8": "' + (Get-Pinned "NPM_VITEST_COVERAGE_V8") + '"')
+    Assert-Contains -Path $PackageJson -Expected ('"node": ">=' + (Get-Pinned "NODE_MIN") + '"')
     Assert-Contains -Path $PackageJson -Expected '"test": "vitest run --coverage"'
     Assert-Contains -Path $PackageJson -Expected '"test:watch": "vitest"'
-    Assert-NotContains -Path $PackageJson -Unexpected '"latest"'
+    Assert-Contains -Path (Join-Path $ProjectDir "frontend/.npmrc") -Expected 'save-exact=true'
     Assert-NotContains -Path $PackageJson -Unexpected "@playwright/test"
     Assert-NotContains -Path $PackageJson -Unexpected "test:e2e"
 
@@ -165,6 +204,11 @@ finally {
         $env:Path = $OriginalPath
     }
     if ($TmpRoot -and (Test-Path -LiteralPath $TmpRoot)) {
-        & cmd.exe /c rmdir /s /q $TmpRoot 2>&1 | Out-Null
+        if ($IsWindows) {
+            & cmd.exe /c rmdir /s /q $TmpRoot 2>&1 | Out-Null
+        }
+        else {
+            Remove-Item -LiteralPath $TmpRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }

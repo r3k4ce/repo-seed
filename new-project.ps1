@@ -159,6 +159,51 @@ function Invoke-Checked {
     }
 }
 
+# Pinned versions live in versions.env next to this script. Both scaffolders
+# read the same file, so a version is only ever changed in one place.
+function Read-Versions {
+    $path = Join-Path $PSScriptRoot "versions.env"
+
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Stop-WithMessage "Missing versions.env next to new-project.ps1."
+    }
+
+    $versions = @{}
+    foreach ($rawLine in [System.IO.File]::ReadAllLines($path)) {
+        $line = ($rawLine -split "#", 2)[0] -replace "\s", ""
+        if ($line.Length -eq 0) {
+            continue
+        }
+        if ($line -notmatch "^([A-Z][A-Z0-9_]*)=([A-Za-z0-9.+-]+)$") {
+            Stop-WithMessage "Invalid line in versions.env: $line"
+        }
+        $versions[$Matches[1]] = $Matches[2]
+    }
+
+    return $versions
+}
+
+function Get-Pinned {
+    param([Parameter(Mandatory)] [string]$Key)
+
+    if (-not $Versions.ContainsKey($Key)) {
+        Stop-WithMessage "versions.env is missing $Key."
+    }
+
+    return $Versions[$Key]
+}
+
+function Get-VersionNumber {
+    param([AllowEmptyString()] [string]$Text)
+
+    if ($Text -match "(\d+)\.(\d+)(?:\.(\d+))?") {
+        $patch = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
+        return [version]::new([int]$Matches[1], [int]$Matches[2], $patch)
+    }
+
+    return $null
+}
+
 function Get-NpmCommand {
     if (Get-Command npm.cmd -ErrorAction SilentlyContinue) {
         return "npm.cmd"
@@ -171,9 +216,54 @@ function Get-NpmCommand {
     Stop-WithMessage "npm was not found on PATH. Install Node.js first, then rerun this script."
 }
 
-if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Stop-WithMessage "uv was not found on PATH. Install uv first, then rerun this script."
+function Test-UvVersion {
+    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+        Stop-WithMessage "uv was not found on PATH. Install uv first, then rerun this script."
+    }
+
+    $minimum = [version](Get-Pinned "UV_MIN")
+    $actual = Get-VersionNumber ((& uv --version 2>$null) -join " ")
+
+    if ($null -eq $actual) {
+        Stop-WithMessage "Could not read the uv version from 'uv --version'."
+    }
+
+    if ($actual -lt $minimum) {
+        Stop-WithMessage "uv $actual is too old. RepoSeed needs uv $minimum or newer. Run 'uv self update' and retry."
+    }
 }
+
+function Test-NodeVersion {
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+        Stop-WithMessage "node was not found on PATH. Install Node.js first, then rerun this script."
+    }
+
+    $minimum = [version](Get-Pinned "NODE_MIN")
+    $actual = Get-VersionNumber ((& node --version 2>$null) -join " ")
+
+    if ($null -eq $actual) {
+        Stop-WithMessage "Could not read the Node.js version from 'node --version'."
+    }
+
+    if ($actual -lt $minimum) {
+        Stop-WithMessage "Node.js $actual is too old. RepoSeed needs Node.js $minimum or newer for the $Profile profile."
+    }
+}
+
+$Versions = Read-Versions
+Test-UvVersion
+
+# Exact pins shared by every profile. The web/game profiles add FastAPI on top.
+$DevToolPins = @(
+    "ruff==$(Get-Pinned 'PY_RUFF')",
+    "pytest==$(Get-Pinned 'PY_PYTEST')",
+    "pytest-cov==$(Get-Pinned 'PY_PYTEST_COV')",
+    "pyright==$(Get-Pinned 'PY_PYRIGHT')",
+    "pre-commit==$(Get-Pinned 'PY_PRE_COMMIT')"
+)
+$RuntimePins = @(
+    "python-dotenv==$(Get-Pinned 'PY_PYTHON_DOTENV')"
+)
 
 if ($Profile -in @("web", "game")) {
     foreach ($existingPath in @("backend", "frontend", "package.json", "pyproject.toml")) {
@@ -204,6 +294,7 @@ if ($Python -match "(\d+)\.(\d+)") {
 if ($Profile -in @("web", "game")) {
     $BackendProjectName = "$ProjectName-backend"
     $BackendPackageName = "${PackageName}_backend"
+    Test-NodeVersion
     $NpmCommand = Get-NpmCommand
     $WebTemplatePrefix = if ($Profile -eq "game") { "game" } else { "web" }
     $FrontendDescription = if ($Profile -eq "game") { "Phaser game frontend" } else { "React TypeScript frontend" }
@@ -227,8 +318,8 @@ if ($Profile -in @("web", "game")) {
 
     Push-Location "backend"
     try {
-        Invoke-Checked uv add fastapi uvicorn python-dotenv
-        Invoke-Checked uv add --dev ruff pytest pytest-cov pyright pre-commit
+        Invoke-Checked uv add @RuntimePins "fastapi==$(Get-Pinned 'PY_FASTAPI')" "uvicorn==$(Get-Pinned 'PY_UVICORN')"
+        Invoke-Checked uv add --dev @DevToolPins
     }
     finally {
         Pop-Location
@@ -312,17 +403,20 @@ exclude_also = [
     "test:e2e": "playwright test",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=$(Get-Pinned 'NODE_MIN')"
+  },
   "dependencies": {
-    "phaser": "latest"
+    "phaser": "$(Get-Pinned 'NPM_PHASER')"
   },
   "devDependencies": {
-    "vite": "latest",
-    "@playwright/test": "latest",
-    "typescript": "latest",
-    "eslint": "latest",
-    "@eslint/js": "latest",
-    "typescript-eslint": "latest",
-    "globals": "latest"
+    "@eslint/js": "$(Get-Pinned 'NPM_ESLINT_JS')",
+    "@playwright/test": "$(Get-Pinned 'NPM_PLAYWRIGHT_TEST')",
+    "eslint": "$(Get-Pinned 'NPM_ESLINT')",
+    "globals": "$(Get-Pinned 'NPM_GLOBALS')",
+    "typescript": "$(Get-Pinned 'NPM_TYPESCRIPT')",
+    "typescript-eslint": "$(Get-Pinned 'NPM_TYPESCRIPT_ESLINT')",
+    "vite": "$(Get-Pinned 'NPM_VITE')"
   }
 }
 "@
@@ -343,33 +437,43 @@ exclude_also = [
     "test:watch": "vitest",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=$(Get-Pinned 'NODE_MIN')"
+  },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "$(Get-Pinned 'NPM_REACT')",
+    "react-dom": "$(Get-Pinned 'NPM_REACT_DOM')"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
-    "@tailwindcss/vite": "^4.3.2",
-    "@testing-library/jest-dom": "^6.0.0",
-    "@testing-library/react": "^16.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "@vitest/coverage-v8": "^4.1.9",
-    "eslint": "^9.0.0",
-    "eslint-plugin-react-hooks": "^7.0.0",
-    "eslint-plugin-react-refresh": "^0.4.0",
-    "globals": "^16.0.0",
-    "jsdom": "^27.0.0",
-    "tailwindcss": "^4.3.2",
-    "typescript": "^5.9.0",
-    "typescript-eslint": "^8.0.0",
-    "vite": "^7.0.0",
-    "vitest": "^4.1.9"
+    "@eslint/js": "$(Get-Pinned 'NPM_ESLINT_JS')",
+    "@tailwindcss/vite": "$(Get-Pinned 'NPM_TAILWINDCSS_VITE')",
+    "@testing-library/jest-dom": "$(Get-Pinned 'NPM_TESTING_LIBRARY_JEST_DOM')",
+    "@testing-library/react": "$(Get-Pinned 'NPM_TESTING_LIBRARY_REACT')",
+    "@types/react": "$(Get-Pinned 'NPM_TYPES_REACT')",
+    "@types/react-dom": "$(Get-Pinned 'NPM_TYPES_REACT_DOM')",
+    "@vitejs/plugin-react": "$(Get-Pinned 'NPM_VITEJS_PLUGIN_REACT')",
+    "@vitest/coverage-v8": "$(Get-Pinned 'NPM_VITEST_COVERAGE_V8')",
+    "eslint": "$(Get-Pinned 'NPM_ESLINT')",
+    "eslint-plugin-react-hooks": "$(Get-Pinned 'NPM_ESLINT_PLUGIN_REACT_HOOKS')",
+    "eslint-plugin-react-refresh": "$(Get-Pinned 'NPM_ESLINT_PLUGIN_REACT_REFRESH')",
+    "globals": "$(Get-Pinned 'NPM_GLOBALS')",
+    "jsdom": "$(Get-Pinned 'NPM_JSDOM')",
+    "tailwindcss": "$(Get-Pinned 'NPM_TAILWINDCSS')",
+    "typescript": "$(Get-Pinned 'NPM_TYPESCRIPT')",
+    "typescript-eslint": "$(Get-Pinned 'NPM_TYPESCRIPT_ESLINT')",
+    "vite": "$(Get-Pinned 'NPM_VITE')",
+    "vitest": "$(Get-Pinned 'NPM_VITEST')"
   }
 }
 "@
     }
+
+    # save-exact keeps future "npm install <pkg>" calls pinned too; engine-strict
+    # turns the engines field above into a hard check instead of a warning.
+    Write-TextFile -Path (Join-Path "frontend" ".npmrc") -Content @'
+save-exact=true
+engine-strict=true
+'@
 
     $FrontendEntry = if ($Profile -eq "game") { "/src/main.ts" } else { "/src/main.tsx" }
 
@@ -883,6 +987,10 @@ finally {
 $FrontendSetupExtra
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
+Dependencies are pinned to exact versions. To upgrade one, change its version
+in backend/pyproject.toml (then run uv lock) or frontend/package.json (then run
+npm install), and run the checks.
+
 ## Commands
 
 Backend source lives in backend/src/$BackendPackageName/. Frontend source lives in frontend/src/.
@@ -1108,22 +1216,14 @@ if ($NoGit) {
 
 Invoke-Checked uv @initArgs
 
-$devTools = @(
-    "ruff",
-    "pytest",
-    "pytest-cov",
-    "pyright",
-    "pre-commit"
-)
-
 Write-Host "Adding dev tooling..."
-Invoke-Checked uv add --dev @devTools
+Invoke-Checked uv add --dev @DevToolPins
 
 Write-Host "Adding runtime dependencies..."
-Invoke-Checked uv add python-dotenv
+Invoke-Checked uv add @RuntimePins
 
 if ($Profile -eq "desktop") {
-    Invoke-Checked uv add PySide6
+    Invoke-Checked uv add "PySide6==$(Get-Pinned 'PY_PYSIDE6')"
 }
 
 New-Item -ItemType Directory -Path "tests" -Force | Out-Null
@@ -1419,6 +1519,9 @@ Write-TextFile -Path "README.md" -Content @"
     uv sync --dev
 
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
+
+Dependencies are pinned to exact versions. To upgrade one, change its version
+in pyproject.toml, run uv lock, then run the checks.
 
 ## Commands
 

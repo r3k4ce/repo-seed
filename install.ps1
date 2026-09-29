@@ -85,6 +85,7 @@ function Copy-Payload {
     Copy-Item -LiteralPath (Join-Path $RepoRoot "new-project.sh") -Destination (Join-Path $PayloadPath "new-project.sh") -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot "new-project.ps1") -Destination (Join-Path $PayloadPath "new-project.ps1") -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot "templates") -Destination (Join-Path $PayloadPath "templates") -Recurse -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot "versions.env") -Destination (Join-Path $PayloadPath "versions.env") -Force
     Set-Content -LiteralPath (Join-Path $PayloadPath ".reposeed-install") -Value @(
         "managed-by=RepoSeed"
         "installed-command=$Command"
@@ -161,6 +162,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "new-project.ps1"))) {
 
 if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "templates") -PathType Container)) {
     Stop-WithMessage "Missing templates directory next to installer."
+}
+
+if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "versions.env") -PathType Leaf)) {
+    Stop-WithMessage "Missing versions.env next to installer."
 }
 
 Ensure-DataDirCanBeReplaced $DataDir

@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly drift check: scaffolds real projects against live registries so a
+    # yanked package or a tool change is caught before you start a new project.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Lint shell scripts
+        run: shellcheck --severity=warning new-project.sh install.sh tests/*.sh
+
+      - name: Contract tests
+        run: bash tests/cross_platform_contract.sh
+
+      - name: Scaffold e2e (base, web, game)
+        env:
+          REPOSEED_E2E_GAME: "1"
+        run: bash tests/scaffold_e2e.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: PowerShell web contract (fake tools)
+        shell: pwsh
+        run: ./tests/powershell_web_contract.ps1
+
+      - name: PowerShell web scaffold e2e
+        shell: pwsh
+        run: ./tests/scaffold_e2e.ps1

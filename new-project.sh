@@ -131,15 +131,65 @@ write_template_file() {
   write_text_file "$path" "$(expand_text "$content")"
 }
 
-require_uv() {
-  if ! command_exists uv; then
-    die "uv was not found on PATH. Install uv first, then rerun this script."
+# Pinned versions live in versions.env next to this script. Every value is
+# loaded into a V_<KEY> shell variable; version_of KEY reads one back.
+load_versions() {
+  local path="$SCRIPT_ROOT/versions.env"
+  local line
+
+  [[ -f "$path" ]] || die "Missing versions.env next to $GENERATOR_NAME."
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line//[[:space:]]/}"
+    [[ -n "$line" ]] || continue
+    [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=([A-Za-z0-9.+-]+)$ ]] || die "Invalid line in versions.env: $line"
+    printf -v "V_${BASH_REMATCH[1]}" '%s' "${BASH_REMATCH[2]}"
+  done <"$path"
+}
+
+version_of() {
+  local var="V_$1"
+  [[ -n "${!var-}" ]] || die "versions.env is missing $1."
+  printf '%s' "${!var}"
+}
+
+# version_ge ACTUAL MINIMUM: true when ACTUAL >= MINIMUM (numeric dotted versions).
+version_ge() {
+  [[ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" == "$2" ]]
+}
+
+extract_version() {
+  local text="$1"
+  if [[ "$text" =~ ([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
   fi
 }
 
-require_npm() {
-  if ! command_exists npm; then
-    die "npm was not found on PATH. Install Node.js first, then rerun this script."
+require_uv() {
+  local minimum actual
+
+  if ! command_exists uv; then
+    die "uv was not found on PATH. Install uv first, then rerun this script."
+  fi
+  minimum="$(version_of UV_MIN)"
+  actual="$(extract_version "$(uv --version 2>/dev/null || true)")"
+  [[ -n "$actual" ]] || die "Could not read the uv version from 'uv --version'."
+  if ! version_ge "$actual" "$minimum"; then
+    die "uv $actual is too old. RepoSeed needs uv $minimum or newer. Run 'uv self update' and retry."
+  fi
+}
+
+require_node_and_npm() {
+  local minimum actual
+
+  if ! command_exists node || ! command_exists npm; then
+    die "node and npm were not found on PATH. Install Node.js first, then rerun this script."
+  fi
+  minimum="$(version_of NODE_MIN)"
+  actual="$(extract_version "$(node --version 2>/dev/null || true)")"
+  [[ -n "$actual" ]] || die "Could not read the Node.js version from 'node --version'."
+  if ! version_ge "$actual" "$minimum"; then
+    die "Node.js $actual is too old. RepoSeed needs Node.js $minimum or newer for the $PROFILE profile."
   fi
 }
 
@@ -212,6 +262,20 @@ init_common_values() {
   if [[ "$PYTHON_VERSION" =~ ([0-9]+)\.([0-9]+) ]]; then
     RUFF_TARGET="py${BASH_REMATCH[1]}${BASH_REMATCH[2]}"
   fi
+}
+
+# Exact pins shared by every profile. The web/game profiles add FastAPI on top.
+init_pins() {
+  DEV_TOOL_PINS=(
+    "ruff==$(version_of PY_RUFF)"
+    "pytest==$(version_of PY_PYTEST)"
+    "pytest-cov==$(version_of PY_PYTEST_COV)"
+    "pyright==$(version_of PY_PYRIGHT)"
+    "pre-commit==$(version_of PY_PRE_COMMIT)"
+  )
+  RUNTIME_PINS=(
+    "python-dotenv==$(version_of PY_PYTHON_DOTENV)"
+  )
 }
 
 timestamp_utc() {
@@ -640,17 +704,20 @@ write_frontend_files() {
     \"test:e2e\": \"playwright test\",
     \"preview\": \"vite preview\"
   },
+  \"engines\": {
+    \"node\": \">=$(version_of NODE_MIN)\"
+  },
   \"dependencies\": {
-    \"phaser\": \"latest\"
+    \"phaser\": \"$(version_of NPM_PHASER)\"
   },
   \"devDependencies\": {
-    \"vite\": \"latest\",
-    \"@playwright/test\": \"latest\",
-    \"typescript\": \"latest\",
-    \"eslint\": \"latest\",
-    \"@eslint/js\": \"latest\",
-    \"typescript-eslint\": \"latest\",
-    \"globals\": \"latest\"
+    \"@eslint/js\": \"$(version_of NPM_ESLINT_JS)\",
+    \"@playwright/test\": \"$(version_of NPM_PLAYWRIGHT_TEST)\",
+    \"eslint\": \"$(version_of NPM_ESLINT)\",
+    \"globals\": \"$(version_of NPM_GLOBALS)\",
+    \"typescript\": \"$(version_of NPM_TYPESCRIPT)\",
+    \"typescript-eslint\": \"$(version_of NPM_TYPESCRIPT_ESLINT)\",
+    \"vite\": \"$(version_of NPM_VITE)\"
   }
 }"
   else
@@ -668,32 +735,40 @@ write_frontend_files() {
     \"test:watch\": \"vitest\",
     \"preview\": \"vite preview\"
   },
+  \"engines\": {
+    \"node\": \">=$(version_of NODE_MIN)\"
+  },
   \"dependencies\": {
-    \"react\": \"^19.0.0\",
-    \"react-dom\": \"^19.0.0\"
+    \"react\": \"$(version_of NPM_REACT)\",
+    \"react-dom\": \"$(version_of NPM_REACT_DOM)\"
   },
   \"devDependencies\": {
-    \"@eslint/js\": \"^9.0.0\",
-    \"@tailwindcss/vite\": \"^4.3.2\",
-    \"@testing-library/jest-dom\": \"^6.0.0\",
-    \"@testing-library/react\": \"^16.0.0\",
-    \"@types/react\": \"^19.0.0\",
-    \"@types/react-dom\": \"^19.0.0\",
-    \"@vitejs/plugin-react\": \"^5.0.0\",
-    \"@vitest/coverage-v8\": \"^4.1.9\",
-    \"eslint\": \"^9.0.0\",
-    \"eslint-plugin-react-hooks\": \"^7.0.0\",
-    \"eslint-plugin-react-refresh\": \"^0.4.0\",
-    \"globals\": \"^16.0.0\",
-    \"jsdom\": \"^27.0.0\",
-    \"tailwindcss\": \"^4.3.2\",
-    \"typescript\": \"^5.9.0\",
-    \"typescript-eslint\": \"^8.0.0\",
-    \"vite\": \"^7.0.0\",
-    \"vitest\": \"^4.1.9\"
+    \"@eslint/js\": \"$(version_of NPM_ESLINT_JS)\",
+    \"@tailwindcss/vite\": \"$(version_of NPM_TAILWINDCSS_VITE)\",
+    \"@testing-library/jest-dom\": \"$(version_of NPM_TESTING_LIBRARY_JEST_DOM)\",
+    \"@testing-library/react\": \"$(version_of NPM_TESTING_LIBRARY_REACT)\",
+    \"@types/react\": \"$(version_of NPM_TYPES_REACT)\",
+    \"@types/react-dom\": \"$(version_of NPM_TYPES_REACT_DOM)\",
+    \"@vitejs/plugin-react\": \"$(version_of NPM_VITEJS_PLUGIN_REACT)\",
+    \"@vitest/coverage-v8\": \"$(version_of NPM_VITEST_COVERAGE_V8)\",
+    \"eslint\": \"$(version_of NPM_ESLINT)\",
+    \"eslint-plugin-react-hooks\": \"$(version_of NPM_ESLINT_PLUGIN_REACT_HOOKS)\",
+    \"eslint-plugin-react-refresh\": \"$(version_of NPM_ESLINT_PLUGIN_REACT_REFRESH)\",
+    \"globals\": \"$(version_of NPM_GLOBALS)\",
+    \"jsdom\": \"$(version_of NPM_JSDOM)\",
+    \"tailwindcss\": \"$(version_of NPM_TAILWINDCSS)\",
+    \"typescript\": \"$(version_of NPM_TYPESCRIPT)\",
+    \"typescript-eslint\": \"$(version_of NPM_TYPESCRIPT_ESLINT)\",
+    \"vite\": \"$(version_of NPM_VITE)\",
+    \"vitest\": \"$(version_of NPM_VITEST)\"
   }
 }"
   fi
+
+  # save-exact keeps future "npm install <pkg>" calls pinned too; engine-strict
+  # turns the engines field above into a hard check instead of a warning.
+  write_text_file "frontend/.npmrc" "save-exact=true
+engine-strict=true"
 
   frontend_entry="/src/main.tsx"
   [[ "$PROFILE" == "game" ]] && frontend_entry="/src/main.ts"
@@ -1104,7 +1179,7 @@ create_web_or_game_project() {
   local backend_test_path="test_health.py"
   local frontend_setup_extra=""
 
-  require_npm
+  require_node_and_npm
 
   if [[ "$PROFILE" == "game" ]]; then
     web_template_prefix="game"
@@ -1135,8 +1210,8 @@ create_web_or_game_project() {
   invoke_checked uv init --package --name "$backend_project_name" --python "$PYTHON_VERSION" --vcs none backend
 
   pushd backend >/dev/null
-  invoke_checked uv add fastapi uvicorn python-dotenv
-  invoke_checked uv add --dev ruff pytest pytest-cov pyright pre-commit
+  invoke_checked uv add "${RUNTIME_PINS[@]}" "fastapi==$(version_of PY_FASTAPI)" "uvicorn==$(version_of PY_UVICORN)"
+  invoke_checked uv add --dev "${DEV_TOOL_PINS[@]}"
   popd >/dev/null
 
   write_text_file "backend/src/$backend_package_name/__init__.py" "def project_name() -> str:
@@ -1163,6 +1238,10 @@ create_web_or_game_project() {
     pushd frontend >/dev/null; npm install; popd >/dev/null
 $frontend_setup_extra
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
+
+Dependencies are pinned to exact versions. To upgrade one, change its version
+in backend/pyproject.toml (then run uv lock) or frontend/package.json (then run
+npm install), and run the checks.
 
 ## Commands
 
@@ -1216,10 +1295,10 @@ create_base_project() {
   invoke_checked uv "${init_args[@]}"
 
   printf 'Adding dev tooling...\n'
-  invoke_checked uv add --dev ruff pytest pytest-cov pyright pre-commit
+  invoke_checked uv add --dev "${DEV_TOOL_PINS[@]}"
 
   printf 'Adding runtime dependencies...\n'
-  invoke_checked uv add python-dotenv
+  invoke_checked uv add "${RUNTIME_PINS[@]}"
 
   mkdir -p "tests"
   write_text_file "src/$PACKAGE_NAME/__init__.py" "def project_name() -> str:
@@ -1271,6 +1350,9 @@ def test_project_name() -> None:
 
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
+Dependencies are pinned to exact versions. To upgrade one, change its version
+in pyproject.toml, run uv lock, then run the checks.
+
 ## Commands
 
 Source code lives in src/$PACKAGE_NAME/. Tests live in tests/.
@@ -1310,6 +1392,8 @@ main() {
   parse_args "$@"
   validate_args
   init_common_values
+  load_versions
+  init_pins
   require_uv
 
   if [[ "$PROFILE" == "web" || "$PROFILE" == "game" ]]; then

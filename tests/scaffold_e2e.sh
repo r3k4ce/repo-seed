@@ -56,6 +56,41 @@ assert_pyright_venv_config() {
   assert_file_contains "$pyproject_path" 'venv = ".venv"'
 }
 
+# Reads one KEY from versions.env so tests assert against the manifest, not
+# against copies of version numbers that would drift.
+pinned() {
+  local key="$1"
+  local value
+
+  value="$(sed -nE "s/^${key}=([A-Za-z0-9.+-]+)[[:space:]]*$/\\1/p" "$ROOT/versions.env" | head -n1)"
+  if [[ -z "$value" ]]; then
+    printf 'versions.env is missing %s\n' "$key" >&2
+    exit 1
+  fi
+  printf '%s' "$value"
+}
+
+assert_exact_pins_only() {
+  local file_path="$1"
+
+  assert_file_not_contains "$file_path" '"latest"'
+  if grep -Eq '": *"[\^~*]' "$file_path"; then
+    printf 'Expected only exact version pins in %s\n' "$file_path" >&2
+    exit 1
+  fi
+}
+
+assert_python_pins() {
+  local pyproject_path="$1"
+
+  assert_file_contains "$pyproject_path" "ruff==$(pinned PY_RUFF)"
+  assert_file_contains "$pyproject_path" "pytest==$(pinned PY_PYTEST)"
+  assert_file_contains "$pyproject_path" "pytest-cov==$(pinned PY_PYTEST_COV)"
+  assert_file_contains "$pyproject_path" "pyright==$(pinned PY_PYRIGHT)"
+  assert_file_contains "$pyproject_path" "pre-commit==$(pinned PY_PRE_COMMIT)"
+  assert_file_contains "$pyproject_path" "python-dotenv==$(pinned PY_PYTHON_DOTENV)"
+}
+
 assert_web_frontend_config() {
   local project_dir="$1"
   local package_json_path="$project_dir/frontend/package.json"
@@ -64,14 +99,21 @@ assert_web_frontend_config() {
   local fix_script_path="$project_dir/scripts/fix.sh"
   local pre_commit_config_path="$project_dir/.pre-commit-config.yaml"
 
-  assert_file_contains "$package_json_path" '"tailwindcss": "^4.3.2"'
-  assert_file_contains "$package_json_path" '"@tailwindcss/vite": "^4.3.2"'
-  assert_file_contains "$package_json_path" '"@vitest/coverage-v8": "^4.1.9"'
+  assert_exact_pins_only "$package_json_path"
+  assert_file_contains "$package_json_path" "\"react\": \"$(pinned NPM_REACT)\""
+  assert_file_contains "$package_json_path" "\"tailwindcss\": \"$(pinned NPM_TAILWINDCSS)\""
+  assert_file_contains "$package_json_path" "\"@tailwindcss/vite\": \"$(pinned NPM_TAILWINDCSS_VITE)\""
+  assert_file_contains "$package_json_path" "\"vite\": \"$(pinned NPM_VITE)\""
+  assert_file_contains "$package_json_path" "\"vitest\": \"$(pinned NPM_VITEST)\""
+  assert_file_contains "$package_json_path" "\"@vitest/coverage-v8\": \"$(pinned NPM_VITEST_COVERAGE_V8)\""
+  assert_file_contains "$package_json_path" "\"node\": \">=$(pinned NODE_MIN)\""
   assert_file_contains "$package_json_path" '"test": "vitest run --coverage"'
   assert_file_contains "$package_json_path" '"test:watch": "vitest"'
-  assert_file_not_contains "$package_json_path" '"latest"'
+  assert_file_contains "$project_dir/frontend/.npmrc" 'save-exact=true'
   assert_file_not_contains "$package_json_path" '@playwright/test'
   assert_file_not_contains "$package_json_path" 'test:e2e'
+  assert_file_contains "$project_dir/backend/pyproject.toml" "fastapi==$(pinned PY_FASTAPI)"
+  assert_file_contains "$project_dir/backend/pyproject.toml" "uvicorn==$(pinned PY_UVICORN)"
 
   assert_file_contains "$vite_config_path" 'import tailwindcss from "@tailwindcss/vite";'
   assert_file_contains "$vite_config_path" 'plugins: [react(), tailwindcss()]'
@@ -115,8 +157,18 @@ run_scaffold_case() {
   popd >/dev/null
 
   assert_pyright_venv_config "$profile" "$project_dir"
+  if [[ "$profile" == "web" || "$profile" == "game" ]]; then
+    assert_python_pins "$project_dir/backend/pyproject.toml"
+  else
+    assert_python_pins "$project_dir/pyproject.toml"
+  fi
   if [[ "$profile" == "web" ]]; then
     assert_web_frontend_config "$project_dir"
+  fi
+  if [[ "$profile" == "game" ]]; then
+    assert_exact_pins_only "$project_dir/frontend/package.json"
+    assert_file_contains "$project_dir/frontend/package.json" "\"phaser\": \"$(pinned NPM_PHASER)\""
+    assert_file_contains "$project_dir/frontend/package.json" "\"@playwright/test\": \"$(pinned NPM_PLAYWRIGHT_TEST)\""
   fi
   if [[ -e "$project_dir/AGENTS.md" ]]; then
     printf 'Expected no AGENTS.md in generated project: %s/AGENTS.md\n' "$project_dir" >&2
