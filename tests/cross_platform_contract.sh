@@ -183,7 +183,12 @@ run_powershell_contract_if_available() {
     printf 'Expected PowerShell fix script.\n' >&2
     exit 1
   }
-  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'powershell -ExecutionPolicy Bypass -File scripts/check.ps1'
+  # The base profile installs per-tool hooks; only the web/game profiles wrap
+  # scripts/check.ps1 in a single pre-push hook.
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run ruff format --check .'
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run pyright'
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'stages: [pre-push]'
+  assert_file_contains "$project_dir/pyproject.toml" 'venvPath = "."'
   if [[ -e "$agents_path" ]]; then
     printf 'Expected no AGENTS.md in generated project: %s\n' "$agents_path" >&2
     exit 1
