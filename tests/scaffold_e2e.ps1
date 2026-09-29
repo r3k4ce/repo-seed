@@ -182,6 +182,11 @@ finally {
         Pop-Location
     }
     if ($TmpRoot -and (Test-Path -LiteralPath $TmpRoot)) {
-        & cmd.exe /c rmdir /s /q $TmpRoot 2>&1 | Out-Null
+        if ($IsWindows) {
+            & cmd.exe /c rmdir /s /q $TmpRoot 2>&1 | Out-Null
+        }
+        else {
+            Remove-Item -LiteralPath $TmpRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
