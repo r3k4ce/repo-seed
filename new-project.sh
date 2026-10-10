@@ -278,17 +278,6 @@ init_pins() {
   )
 }
 
-timestamp_utc() {
-  date -u +"%Y-%m-%dT%H:%M:%SZ"
-}
-
-timestamp_local() {
-  local stamp offset
-  stamp="$(date +"%Y-%m-%dT%H:%M:%S")"
-  offset="$(date +"%z")"
-  printf '%s%s:%s' "$stamp" "${offset:0:3}" "${offset:3:2}"
-}
-
 write_base_common_files() {
   add_text_file "pyproject.toml" "
 
@@ -1174,8 +1163,6 @@ create_web_or_game_project() {
   local backend_package_name="${PACKAGE_NAME}_backend"
   local web_template_prefix="web"
   local frontend_description="React TypeScript frontend"
-  local memory_summary="Created initial web app scaffold."
-  local memory_changed="Initial FastAPI backend, React TypeScript frontend, checks, CI, hooks, and memory file."
   local backend_test_template="web/test_health.py"
   local backend_test_path="test_health.py"
   local frontend_setup_extra=""
@@ -1185,8 +1172,6 @@ create_web_or_game_project() {
   if [[ "$PROFILE" == "game" ]]; then
     web_template_prefix="game"
     frontend_description="Phaser game frontend"
-    memory_summary="Created initial game scaffold."
-    memory_changed="Initial FastAPI backend, Phaser frontend, checks, CI, hooks, and memory file."
     backend_test_template="game/test_game_api.py"
     backend_test_path="test_game_api.py"
     frontend_setup_extra="    pushd frontend >/dev/null; npm exec playwright install chromium; popd >/dev/null"
@@ -1254,20 +1239,7 @@ Backend source lives in backend/src/$backend_package_name/. Frontend source live
     ./scripts/check.sh
     ./scripts/fix.sh
     pushd backend >/dev/null; uv run uvicorn $backend_package_name.main:app --reload; popd >/dev/null
-    pushd frontend >/dev/null; npm run dev; popd >/dev/null
-
-## Docs
-
-Project memory lives in docs/project-memory.yaml."
-
-  write_text_file "docs/project-memory.yaml" "entries:
-  - time_utc: \"$(timestamp_utc)\"
-    time_local: \"$(timestamp_local)\"
-    summary: \"$memory_summary\"
-    changed:
-      - \"$memory_changed\"
-    verification:
-      - 'Not run yet; run ./scripts/check.sh before first commit.'"
+    pushd frontend >/dev/null; npm run dev; popd >/dev/null"
 
   write_text_file ".pre-commit-config.yaml" 'repos:
   - repo: local
@@ -1362,20 +1334,7 @@ in pyproject.toml, run uv lock, then run the checks.
 Source code lives in src/$PACKAGE_NAME/. Tests live in tests/.
 
     ./scripts/check.sh
-    ./scripts/fix.sh
-
-## Docs
-
-Project memory lives in docs/project-memory.yaml."
-
-  write_text_file "docs/project-memory.yaml" "entries:
-  - time_utc: \"$(timestamp_utc)\"
-    time_local: \"$(timestamp_local)\"
-    summary: \"Created initial $PROFILE scaffold.\"
-    changed:
-      - \"Initial $PROFILE project, tests, checks, CI, hooks, and memory file.\"
-    verification:
-      - 'Not run yet; run ./scripts/check.sh before first commit.'"
+    ./scripts/fix.sh"
 
   write_base_ci
   install_base_hooks

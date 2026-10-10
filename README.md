@@ -52,7 +52,6 @@ See [Usage](#usage) for the full option list.
 - **Bash or PowerShell** check/fix scripts to run everything
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
-- **Project memory** at `docs/project-memory.yaml`
 - **Exact, tested dependency versions** from [`versions.env`](versions.env), so every
   run produces the same project (see [Version policy](docs/versioning.md))
 
@@ -144,8 +143,6 @@ Done. Next: ./scripts/check.sh
 |-- .gitattributes
 |-- .gitignore
 |-- .pre-commit-config.yaml
-|-- docs/
-|   `-- project-memory.yaml
 |-- scripts/
 |   |-- check.sh
 |   `-- fix.sh
@@ -287,7 +284,6 @@ Options:
 |-- scripts/
 |   |-- check.sh
 |   `-- fix.sh
-|-- docs/project-memory.yaml
 `-- pyproject.toml
 ```
 
@@ -304,7 +300,6 @@ Entrypoint: Python package in `src/<package>/`. Check with `./scripts/check.sh` 
 |   `-- services/
 |-- tests/
 |-- scripts/
-|-- docs/project-memory.yaml
 `-- pyproject.toml
 ```
 
@@ -322,8 +317,7 @@ Entrypoint: `uv run python -m <package>`. UI starts in `src/<package>/ui/`.
 |   |-- src/
 |   |-- package.json
 |   `-- vite.config.ts
-|-- scripts/
-`-- docs/project-memory.yaml
+`-- scripts/
 ```
 
 Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; React app in `frontend/src/`.
@@ -343,8 +337,7 @@ Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; React app i
 |   |-- package.json
 |   |-- playwright.config.ts
 |   `-- vite.config.ts
-|-- scripts/
-`-- docs/project-memory.yaml
+`-- scripts/
 ```
 
 Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; Phaser scene code in `frontend/src/game/`.
