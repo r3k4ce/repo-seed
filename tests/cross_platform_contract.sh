@@ -34,6 +34,11 @@ prepend_fake_uv() {
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1-}" == "--version" ]]; then
+  printf 'uv 99.0.0 (fake)\n'
+  exit 0
+fi
+
 if [[ "${1-}" == "init" ]]; then
   project_dir="."
   package_name="python_project"
@@ -112,6 +117,10 @@ run_bash_install_contract() {
     printf 'Expected templates in payload.\n' >&2
     exit 1
   }
+  [[ -f "$data_dir/versions.env" ]] || {
+    printf 'Expected versions.env in payload.\n' >&2
+    exit 1
+  }
 
   assert_file_contains "$wrapper" 'new-project.sh'
 }
@@ -127,6 +136,7 @@ run_windows_installer_static_contract() {
   assert_file_contains "$installer_path" 'Microsoft\WindowsApps'
   assert_file_contains "$installer_path" 'RepoSeed'
   assert_file_contains "$installer_path" 'new-project.ps1'
+  assert_file_contains "$installer_path" 'versions.env'
   assert_file_contains "$installer_path" '$Command.ps1'
 }
 
@@ -189,7 +199,12 @@ run_powershell_contract_if_available() {
     printf 'Expected PowerShell fix script.\n' >&2
     exit 1
   }
-  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'powershell -ExecutionPolicy Bypass -File scripts/check.ps1'
+  # The base profile installs per-tool hooks; only the web/game profiles wrap
+  # scripts/check.ps1 in a single pre-push hook.
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run ruff format --check .'
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run pyright'
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'stages: [pre-push]'
+  assert_file_contains "$project_dir/pyproject.toml" 'venvPath = "."'
   if [[ -e "$agents_path" ]]; then
     printf 'Expected no AGENTS.md in generated project: %s\n' "$agents_path" >&2
     exit 1
@@ -221,9 +236,21 @@ run_bash_web_and_game_install_contract() {
     printf 'Expected README.md: %s\n' "$project_dir/README.md" >&2
     exit 1
   }
-  assert_file_contains "$project_dir/frontend/package.json" '"@vitest/coverage-v8": "4.1.10"'
-  assert_file_contains "$project_dir/frontend/package.json" '"vitest": "4.1.10"'
-  assert_file_contains "$project_dir/frontend/package.json" '"@testing-library/dom": "^10.0.0"'
+  local vitest_version coverage_version dom_version
+  dom_version="$(sed -nE 's/^NPM_TESTING_LIBRARY_DOM=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
+  [[ -n "$dom_version" ]] || {
+    printf 'versions.env is missing NPM_TESTING_LIBRARY_DOM\n' >&2
+    exit 1
+  }
+  assert_file_contains "$project_dir/frontend/package.json" "\"@testing-library/dom\": \"$dom_version\""
+  vitest_version="$(sed -nE 's/^NPM_VITEST=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
+  coverage_version="$(sed -nE 's/^NPM_VITEST_COVERAGE_V8=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
+  [[ -n "$vitest_version" && -n "$coverage_version" ]] || {
+    printf 'versions.env is missing NPM_VITEST or NPM_VITEST_COVERAGE_V8\n' >&2
+    exit 1
+  }
+  assert_file_contains "$project_dir/frontend/package.json" "\"@vitest/coverage-v8\": \"$coverage_version\""
+  assert_file_contains "$project_dir/frontend/package.json" "\"vitest\": \"$vitest_version\""
   local -a calls
   mapfile -t calls <"$log_path"
   if [[ "${#calls[@]}" -ne 1 || "${calls[0]}" != "install --no-audit --legacy-peer-deps" ]]; then

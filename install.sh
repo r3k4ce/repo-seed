@@ -103,6 +103,7 @@ copy_payload() {
   cp "$REPO_ROOT/new-project.sh" "$payload/new-project.sh"
   cp "$REPO_ROOT/new-project.ps1" "$payload/new-project.ps1"
   cp -R "$REPO_ROOT/templates" "$payload/templates"
+  cp "$REPO_ROOT/versions.env" "$payload/versions.env"
   chmod +x "$payload/new-project.sh"
   printf 'managed-by=RepoSeed\ninstalled-command=%s\n' "$COMMAND_NAME" >"$payload/.reposeed-install"
 }
@@ -146,6 +147,7 @@ main() {
   [[ -f "$REPO_ROOT/new-project.sh" ]] || die "Missing new-project.sh next to installer."
   [[ -f "$REPO_ROOT/new-project.ps1" ]] || die "Missing new-project.ps1 next to installer."
   [[ -d "$REPO_ROOT/templates" ]] || die "Missing templates directory next to installer."
+  [[ -f "$REPO_ROOT/versions.env" ]] || die "Missing versions.env next to installer."
 
   parse_args "$@"
   validate_args

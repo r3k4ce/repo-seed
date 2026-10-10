@@ -53,6 +53,8 @@ See [Usage](#usage) for the full option list.
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
 - **Project memory** at `docs/project-memory.yaml`
+- **Exact, tested dependency versions** from [`versions.env`](versions.env), so every
+  run produces the same project (see [Version policy](docs/versioning.md))
 
 ## Requirements
 
@@ -63,9 +65,13 @@ macOS is not an official target yet.
 - **Bash** — required on Linux to run `install.sh`, `new-project.sh`, and generated `scripts/*.sh`.
 - **PowerShell 7+** — required on Windows to run `install.ps1`, `new-project.ps1`, and generated `scripts/*.ps1`.
 - **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
-- **`npm`** (Node.js 18+) — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
+- **Node.js with `npm`** — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
 - **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `--no-git` or `-NoGit` to skip explicitly.
-- **Python** — any version `uv` can install; default is `3.12` (override with `-Python`).
+- **Python** — any version `uv` can install; default is `3.12` (override with `--python` / `-Python`).
+
+The minimum `uv` and Node.js versions live in [`versions.env`](versions.env)
+(`UV_MIN`, `NODE_MIN`). The scaffolders check them before writing anything and
+stop with a clear message if a tool is too old.
 
 ## Quick start
 
@@ -270,48 +276,6 @@ Options:
 * `-NoInstallHooks`: skip pre-commit and pre-push hook installation.
 * `-NoGitHubActions`: skip GitHub Actions workflow generation.
 
-## Optional: PowerShell alias (`np`)
-
-The `np` alias is a convenience for running the scaffolder from any folder without typing the full path. **It is not required** to use RepoSeed — if you only run the script occasionally, the absolute-path call from [Quick start](#quick-start) is enough.
-
-To set up the alias, add a small function to your PowerShell 7 profile. Use the absolute path to this repository on your machine.
-
-```powershell
-if (-not (Test-Path -LiteralPath $PROFILE)) {
-    New-Item -ItemType File -Path $PROFILE -Force | Out-Null
-}
-
-notepad $PROFILE
-```
-
-Add this function to the profile:
-
-```powershell
-function np {
-    & "<absolute-path-to-this-repo>\new-project.ps1" @args
-}
-```
-
-Reload the profile and verify the command:
-
-```powershell
-. $PROFILE
-Get-Command np
-```
-
-After that, create and enter a fresh project directory, then run `np` from there.
-The script refuses to scaffold directly in your home directory.
-
-Or use the `np` profile function from any directory:
-
-```powershell
-np
-np -Name my-app
-np -Profile web
-np -Profile game -Python 3.13 -TypeMode strict
-np -NoGit -NoInstallHooks -NoGitHubActions
-```
-
 ## Profile structures
 
 ### `base`
@@ -384,6 +348,36 @@ Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; React app i
 ```
 
 Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; Phaser scene code in `frontend/src/game/`.
+
+## Keeping it reliable
+
+The point of RepoSeed is that it works the same way every time you start a
+project. Three things make that hold:
+
+- **One version manifest.** Every package the scaffolders install is pinned to
+  an exact version in [`versions.env`](versions.env). Both scaffolders read it,
+  so a bump happens in one place and applies to Bash and PowerShell alike.
+- **Tests that scaffold real projects.** `tests/scaffold_e2e.sh` and
+  `tests/scaffold_e2e.ps1` create projects with real `uv` and `npm` installs and
+  run the generated checks. A pinned set is only accepted after it passes.
+- **Weekly CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the
+  tests on every push and on a weekly schedule, so upstream drift is caught
+  before it costs you a project start.
+
+To upgrade the pinned versions, edit `versions.env`, run the tests, and commit.
+The full procedure is in [docs/versioning.md](docs/versioning.md).
+
+Run the tests locally:
+
+```bash
+bash tests/cross_platform_contract.sh
+REPOSEED_E2E_GAME=1 bash tests/scaffold_e2e.sh
+```
+
+```powershell
+pwsh -NoProfile -File tests/powershell_web_contract.ps1
+pwsh -NoProfile -File tests/scaffold_e2e.ps1
+```
 
 ## Non-goals
 

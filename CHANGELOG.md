@@ -5,6 +5,39 @@ See the README for the current project description and usage.
 
 ## [Unreleased]
 
+### Added
+
+- `versions.env`: a single manifest of exact, tested versions for every
+  package the scaffolders install, plus minimum `uv` and Node.js versions.
+  Both `new-project.sh` and `new-project.ps1` read it; the installers ship it.
+- Preflight checks: the scaffolders now stop early with a clear message when
+  `uv` or Node.js is older than the minimum in `versions.env`.
+- Generated frontends get `frontend/.npmrc` (`save-exact`, `engine-strict`)
+  and an `engines.node` field.
+- Repository CI (`.github/workflows/ci.yml`) runs shellcheck, the contract
+  tests, and the scaffold e2e tests on Linux and Windows, on every push and
+  weekly, to catch upstream drift.
+- `docs/versioning.md` describes the version policy and the bump procedure.
+
+### Changed
+
+- Python dependencies are added with exact `==` pins instead of "whatever is
+  newest today".
+- Frontend `package.json` files use exact versions instead of `^` ranges, and
+  the `game` profile no longer uses `"latest"` for any package.
+- Tests assert against `versions.env` instead of hard-coded version strings.
+- The web/game bootstrap runs `npm install --no-audit --legacy-peer-deps`.
+  npm 10's peer-set loader crashes (`Cannot read properties of null (reading
+  'edgesOut')`) on the generated dependency tree; the flag avoids it. Because
+  legacy mode skips peer auto-install, `@testing-library/dom` (a required peer
+  of `@testing-library/react`) is now pinned explicitly in `versions.env`.
+
+### Removed
+
+- Stale planning artifacts (`.superpowers/`, `docs/superpowers/`) and the
+  README section about a hand-written `np` PowerShell alias, which the
+  installer's `reposeed` command replaces.
+
 ### Removed
 
 - Scaffolders no longer generate `AGENTS.md` in new projects, and the
