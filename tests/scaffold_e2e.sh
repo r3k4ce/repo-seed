@@ -14,12 +14,20 @@ require_command() {
 }
 
 run_project_checks() {
-  local project_dir="$1"
+  local profile="$1"
+  local project_dir="$2"
+  local subfolder="tests"
+  [[ "$profile" == "base" ]] || subfolder="backend"
 
   pushd "$project_dir" >/dev/null
-  ./scripts/check.sh
-  ./scripts/fix.sh
-  ./scripts/check.sh
+  uv run scripts/check.py
+  uv run scripts/fix.py
+  uv run scripts/check.py
+  popd >/dev/null
+
+  # The scripts resolve paths from their own location, not the caller's.
+  pushd "$project_dir/$subfolder" >/dev/null
+  uv run ../scripts/check.py
   popd >/dev/null
 }
 
@@ -41,6 +49,27 @@ assert_file_not_contains() {
     printf 'Expected %s not to contain: %s\n' "$file_path" "$unexpected" >&2
     exit 1
   fi
+}
+
+# Generated helper scripts must be exact copies of templates/scripts/<profile>/,
+# with no per-platform shell scripts alongside them.
+assert_project_scripts() {
+  local profile="$1"
+  local project_dir="$2"
+  local task leftover
+
+  for task in check fix; do
+    cmp -s "$ROOT/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
+      printf 'Expected %s/scripts/%s.py to equal templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
+      exit 1
+    }
+  done
+  for leftover in check.sh fix.sh check.ps1 fix.ps1; do
+    if [[ -e "$project_dir/scripts/$leftover" ]]; then
+      printf 'Expected no scripts/%s in generated project: %s\n' "$leftover" "$project_dir" >&2
+      exit 1
+    fi
+  done
 }
 
 assert_pyright_venv_config() {
@@ -95,8 +124,6 @@ assert_web_frontend_config() {
   local project_dir="$1"
   local package_json_path="$project_dir/frontend/package.json"
   local vite_config_path="$project_dir/frontend/vite.config.ts"
-  local check_script_path="$project_dir/scripts/check.sh"
-  local fix_script_path="$project_dir/scripts/fix.sh"
   local pre_commit_config_path="$project_dir/.pre-commit-config.yaml"
 
   assert_exact_pins_only "$package_json_path"
@@ -121,23 +148,7 @@ assert_web_frontend_config() {
   assert_file_contains "$vite_config_path" 'provider: "v8"'
   assert_file_contains "$vite_config_path" 'thresholds: {'
 
-  assert_file_contains "$check_script_path" 'uv run pytest'
-  assert_file_contains "$check_script_path" 'npm run test'
-  assert_file_contains "$check_script_path" 'npm run typecheck'
-  assert_file_contains "$check_script_path" 'npm run lint'
-  assert_file_contains "$check_script_path" 'npm run build'
-  assert_file_not_contains "$check_script_path" 'npm run test --if-present'
-  assert_file_not_contains "$check_script_path" 'npm run test:e2e --if-present'
-
-  assert_file_contains "$fix_script_path" 'uv run pytest'
-  assert_file_contains "$fix_script_path" 'npm run test'
-  assert_file_contains "$fix_script_path" 'npm run typecheck'
-  assert_file_contains "$fix_script_path" 'npm run lint'
-  assert_file_contains "$fix_script_path" 'npm run build'
-  assert_file_not_contains "$fix_script_path" 'npm run test --if-present'
-  assert_file_not_contains "$fix_script_path" 'npm run test:e2e --if-present'
-
-  assert_file_contains "$pre_commit_config_path" 'entry: bash scripts/check.sh'
+  assert_file_contains "$pre_commit_config_path" 'entry: uv run scripts/check.py'
   assert_file_contains "$pre_commit_config_path" 'stages: [pre-push]'
   assert_file_not_contains "$pre_commit_config_path" 'npm run test:e2e'
 }
@@ -158,6 +169,10 @@ run_scaffold_case() {
   popd >/dev/null
 
   assert_pyright_venv_config "$profile" "$project_dir"
+  assert_project_scripts "$profile" "$project_dir"
+  if [[ "$profile" == "base" ]]; then
+    assert_file_contains "$project_dir/pyproject.toml" 'include = ["src", "tests", "scripts"]'
+  fi
   if [[ "$profile" == "web" || "$profile" == "game" ]]; then
     assert_python_pins "$project_dir/backend/pyproject.toml"
   else
@@ -175,7 +190,7 @@ run_scaffold_case() {
     printf 'Expected no AGENTS.md in generated project: %s/AGENTS.md\n' "$project_dir" >&2
     exit 1
   fi
-  run_project_checks "$project_dir"
+  run_project_checks "$profile" "$project_dir"
   printf '%s scaffold e2e passed\n' "$profile"
 }
 

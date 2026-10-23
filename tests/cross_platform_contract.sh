@@ -26,6 +26,27 @@ assert_file_not_contains() {
   fi
 }
 
+# Generated helper scripts must be exact copies of templates/scripts/<profile>/,
+# with no per-platform shell scripts alongside them.
+assert_project_scripts() {
+  local profile="$1"
+  local project_dir="$2"
+  local task leftover
+
+  for task in check fix; do
+    cmp -s "$ROOT/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
+      printf 'Expected %s/scripts/%s.py to equal templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
+      exit 1
+    }
+  done
+  for leftover in check.sh fix.sh check.ps1 fix.ps1; do
+    if [[ -e "$project_dir/scripts/$leftover" ]]; then
+      printf 'Expected no scripts/%s in generated project: %s\n' "$leftover" "$project_dir" >&2
+      exit 1
+    fi
+  done
+}
+
 prepend_fake_uv() {
   local fake_bin="$1"
 
@@ -157,6 +178,9 @@ run_base_scaffold_contract() {
     --no-github-actions
   popd >/dev/null
 
+  assert_project_scripts base "$project_dir"
+  assert_file_contains "$project_dir/pyproject.toml" 'include = ["src", "tests", "scripts"]'
+
   if [[ -e "$agents_path" ]]; then
     printf 'Expected no AGENTS.md in generated project: %s\n' "$agents_path" >&2
     exit 1
@@ -236,6 +260,8 @@ run_bash_web_and_game_install_contract() {
     printf 'Expected README.md: %s\n' "$project_dir/README.md" >&2
     exit 1
   }
+  assert_project_scripts web "$project_dir"
+  assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run scripts/check.py'
   local vitest_version coverage_version dom_version
   dom_version="$(sed -nE 's/^NPM_TESTING_LIBRARY_DOM=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
   [[ -n "$dom_version" ]] || {
@@ -277,6 +303,8 @@ run_bash_web_and_game_install_contract() {
     exit 1
   fi
 
+  assert_project_scripts game "$game_dir"
+  assert_file_contains "$game_dir/.pre-commit-config.yaml" 'entry: uv run scripts/check.py'
   assert_file_not_contains "$game_dir/frontend/package.json" '"vitest"'
   assert_file_not_contains "$game_dir/frontend/package.json" '"@vitest/coverage-v8"'
 

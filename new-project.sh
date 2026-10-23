@@ -10,6 +10,12 @@ set -euo pipefail
 # game/test_game_api.py
 # game/playwright.config.ts
 # game/game-smoke.spec.ts
+# scripts/base/check.py
+# scripts/base/fix.py
+# scripts/web/check.py
+# scripts/web/fix.py
+# scripts/game/check.py
+# scripts/game/fix.py
 
 NAME="$(basename "$(pwd -P)")"
 PYTHON_VERSION="3.12"
@@ -19,8 +25,6 @@ GENERATOR_NAME="new-project.sh"
 PRIMARY_SHELL="Bash"
 COMMAND_FENCE="bash"
 SETUP_COMMAND="uv sync --dev"
-CHECK_COMMAND="./scripts/check.sh"
-FIX_COMMAND="./scripts/fix.sh"
 NO_GIT=0
 NO_INSTALL_HOOKS=0
 NO_GITHUB_ACTIONS=0
@@ -117,8 +121,6 @@ expand_text() {
   text="${text//__PRIMARY_SHELL__/$PRIMARY_SHELL}"
   text="${text//__COMMAND_FENCE__/$COMMAND_FENCE}"
   text="${text//__SETUP_COMMAND__/$SETUP_COMMAND}"
-  text="${text//__CHECK_COMMAND__/$CHECK_COMMAND}"
-  text="${text//__FIX_COMMAND__/$FIX_COMMAND}"
   printf '%s' "$text"
 }
 
@@ -305,7 +307,7 @@ indent-style = \"space\"
 line-ending = \"auto\"
 
 [tool.pyright]
-include = [\"src\", \"tests\"]
+include = [\"src\", \"tests\", \"scripts\"]
 exclude = [
     \".venv\",
     \".pytest_cache\",
@@ -431,26 +433,14 @@ Thumbs.db"
   write_text_file ".env.example" "# Add required environment variable names here. Never commit real secrets."
 }
 
-write_base_scripts() {
-  mkdir -p "scripts"
-  write_text_file "scripts/check.sh" '#!/usr/bin/env bash
-set -euo pipefail
+# Every profile gets the same cross-platform helper scripts from
+# templates/scripts/<profile>/; desktop shares the base pair.
+write_project_scripts() {
+  local profile="$PROFILE"
+  [[ "$profile" != "desktop" ]] || profile="base"
 
-uv run ruff format --check .
-uv run ruff check .
-uv run pyright
-uv run pytest'
-
-  write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
-set -euo pipefail
-
-uv run ruff check . --fix
-uv run ruff format .
-uv run ruff check .
-uv run pyright
-uv run pytest'
-
-  chmod +x "scripts/check.sh" "scripts/fix.sh"
+  write_template_file "scripts/$profile/check.py" "scripts/check.py"
+  write_template_file "scripts/$profile/fix.py" "scripts/fix.py"
 }
 
 write_web_common_files() {
@@ -539,83 +529,6 @@ build/
 Thumbs.db"
 
   write_text_file ".env.example" "# Add required environment variable names here. Never commit real secrets."
-}
-
-write_web_scripts() {
-  mkdir -p "scripts"
-  if [[ "$PROFILE" == "game" ]]; then
-    write_text_file "scripts/check.sh" '#!/usr/bin/env bash
-set -euo pipefail
-
-pushd backend >/dev/null
-uv run ruff format --check .
-uv run ruff check .
-uv run pyright
-uv run pytest
-popd >/dev/null
-
-pushd frontend >/dev/null
-npm run test --if-present
-npm run test:e2e --if-present
-npm run lint
-npm run build
-popd >/dev/null'
-
-    write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
-set -euo pipefail
-
-pushd backend >/dev/null
-uv run ruff check . --fix
-uv run ruff format .
-uv run ruff check .
-uv run pyright
-uv run pytest
-popd >/dev/null
-
-pushd frontend >/dev/null
-npm run test --if-present
-npm run test:e2e --if-present
-npm run lint
-npm run build
-popd >/dev/null'
-  else
-    write_text_file "scripts/check.sh" '#!/usr/bin/env bash
-set -euo pipefail
-
-pushd backend >/dev/null
-uv run ruff format --check .
-uv run ruff check .
-uv run pyright
-uv run pytest
-popd >/dev/null
-
-pushd frontend >/dev/null
-npm run test
-npm run typecheck
-npm run lint
-npm run build
-popd >/dev/null'
-
-    write_text_file "scripts/fix.sh" '#!/usr/bin/env bash
-set -euo pipefail
-
-pushd backend >/dev/null
-uv run ruff check . --fix
-uv run ruff format .
-uv run ruff check .
-uv run pyright
-uv run pytest
-popd >/dev/null
-
-pushd frontend >/dev/null
-npm run test
-npm run typecheck
-npm run lint
-npm run build
-popd >/dev/null'
-  fi
-
-  chmod +x "scripts/check.sh" "scripts/fix.sh"
 }
 
 write_web_backend_pyproject_config() {
@@ -1218,7 +1131,7 @@ create_web_or_game_project() {
   popd >/dev/null
 
   write_web_common_files
-  write_web_scripts
+  write_project_scripts
   write_text_file "README.md" "# $PROJECT_NAME
 
 ## Setup
@@ -1236,8 +1149,8 @@ npm install), and run the checks.
 
 Backend source lives in backend/src/$backend_package_name/. Frontend source lives in frontend/src/.
 
-    ./scripts/check.sh
-    ./scripts/fix.sh
+    uv run scripts/check.py
+    uv run scripts/fix.py
     pushd backend >/dev/null; uv run uvicorn $backend_package_name.main:app --reload; popd >/dev/null
     pushd frontend >/dev/null; npm run dev; popd >/dev/null"
 
@@ -1246,7 +1159,7 @@ Backend source lives in backend/src/$backend_package_name/. Frontend source live
     hooks:
       - id: project-check
         name: project check
-        entry: bash scripts/check.sh
+        entry: uv run scripts/check.py
         language: system
         pass_filenames: false
         stages: [pre-push]'
@@ -1254,7 +1167,7 @@ Backend source lives in backend/src/$backend_package_name/. Frontend source live
   write_web_ci
   install_web_hooks
 
-  printf '\nDone. Next: ./scripts/check.sh\n'
+  printf '\nDone. Next: uv run scripts/check.py\n'
 }
 
 create_base_project() {
@@ -1317,7 +1230,7 @@ def test_project_name() -> None:
         pass_filenames: false
         stages: [pre-push]'
 
-  write_base_scripts
+  write_project_scripts
   write_text_file "README.md" "# $PROJECT_NAME
 
 ## Setup
@@ -1333,13 +1246,13 @@ in pyproject.toml, run uv lock, then run the checks.
 
 Source code lives in src/$PACKAGE_NAME/. Tests live in tests/.
 
-    ./scripts/check.sh
-    ./scripts/fix.sh"
+    uv run scripts/check.py
+    uv run scripts/fix.py"
 
   write_base_ci
   install_base_hooks
 
-  printf '\nDone. Next: ./scripts/check.sh\n'
+  printf '\nDone. Next: uv run scripts/check.py\n'
 }
 
 main() {
