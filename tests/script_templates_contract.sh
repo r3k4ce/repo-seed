@@ -113,6 +113,18 @@ test_templates_complete() {
   done
 }
 
+# Scaffolders write LF; the e2e tests compare generated scripts to the
+# templates byte for byte, so a Windows checkout must not convert them to CRLF.
+test_templates_check_out_with_lf() {
+  local profile task eol
+  for profile in "${PROFILES[@]}"; do
+    for task in "${TASKS[@]}"; do
+      eol="$(git -C "$ROOT" check-attr eol -- "templates/scripts/$profile/$task.py")"
+      [[ "$eol" == *": eol: lf" ]] || fail "Expected eol=lf git attribute, got: $eol"
+    done
+  done
+}
+
 test_shared_helper_identical() {
   local reference="" profile task helper
   for profile in "${PROFILES[@]}"; do
@@ -195,6 +207,7 @@ test_prints_commands() {
 }
 
 test_templates_complete
+test_templates_check_out_with_lf
 test_shared_helper_identical
 for profile in "${PROFILES[@]}"; do
   for task in "${TASKS[@]}"; do

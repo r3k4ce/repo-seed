@@ -146,7 +146,6 @@ try {
     Assert-Contains -Path $ViteConfig -Expected 'functions: 80'
     Assert-Contains -Path $ViteConfig -Expected 'lines: 80'
 
-
     Assert-Contains -Path $CiYaml -Expected '- name: Frontend test'
     Assert-Contains -Path $CiYaml -Expected 'run: npm run test'
     Assert-Contains -Path $CiYaml -Expected '- name: Frontend typecheck'
@@ -169,6 +168,18 @@ try {
             if ($LASTEXITCODE -ne 0) {
                 throw "uv run $script failed with exit code $LASTEXITCODE"
             }
+        }
+
+        # The scripts resolve paths from their own location, not the caller's.
+        Push-Location backend
+        try {
+            & uv run ../scripts/check.py
+            if ($LASTEXITCODE -ne 0) {
+                throw "uv run ../scripts/check.py from backend failed with exit code $LASTEXITCODE"
+            }
+        }
+        finally {
+            Pop-Location
         }
     }
     finally {

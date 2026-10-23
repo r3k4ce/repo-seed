@@ -1,0 +1,3 @@
+# Templates are copied byte for byte into generated projects with LF endings;
+# keep Windows checkouts from converting them to CRLF.
+templates/** text eol=lf
