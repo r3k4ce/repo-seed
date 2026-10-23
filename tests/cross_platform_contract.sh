@@ -215,16 +215,10 @@ run_powershell_contract_if_available() {
     -NoGitHubActions
   popd >/dev/null
 
-  [[ -f "$project_dir/scripts/check.ps1" ]] || {
-    printf 'Expected PowerShell check script.\n' >&2
-    exit 1
-  }
-  [[ -f "$project_dir/scripts/fix.ps1" ]] || {
-    printf 'Expected PowerShell fix script.\n' >&2
-    exit 1
-  }
+  assert_project_scripts base "$project_dir"
+  assert_file_contains "$project_dir/pyproject.toml" 'include = ["src", "tests", "scripts"]'
   # The base profile installs per-tool hooks; only the web/game profiles wrap
-  # scripts/check.ps1 in a single pre-push hook.
+  # scripts/check.py in a single pre-push hook.
   assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run ruff format --check .'
   assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run pyright'
   assert_file_contains "$project_dir/.pre-commit-config.yaml" 'stages: [pre-push]'

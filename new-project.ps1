@@ -132,9 +132,7 @@ function Expand-Template {
         Replace("__GENERATOR_NAME__", "new-project.ps1").
         Replace("__PRIMARY_SHELL__", "PowerShell").
         Replace("__COMMAND_FENCE__", "powershell").
-        Replace("__SETUP_COMMAND__", "uv sync --dev").
-        Replace("__CHECK_COMMAND__", ".\scripts\check.ps1").
-        Replace("__FIX_COMMAND__", ".\scripts\fix.ps1")
+        Replace("__SETUP_COMMAND__", "uv sync --dev")
 }
 
 function Write-TemplateFile {
@@ -803,179 +801,10 @@ Thumbs.db
 # Add required environment variable names here. Never commit real secrets.
 "@
 
-    New-Item -ItemType Directory -Path "scripts" -Force | Out-Null
-
-    if ($Profile -eq "game") {
-        Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
-
-Push-Location backend
-try {
-    Invoke-Checked uv run ruff format --check .
-    Invoke-Checked uv run ruff check .
-    Invoke-Checked uv run pyright
-    Invoke-Checked uv run pytest
-}
-finally {
-    Pop-Location
-}
-
-Push-Location frontend
-try {
-    Invoke-Checked $Npm run test --if-present
-    Invoke-Checked $Npm run test:e2e --if-present
-    Invoke-Checked $Npm run lint
-    Invoke-Checked $Npm run build
-}
-finally {
-    Pop-Location
-}
-'@
-    }
-    else {
-        Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
-
-Push-Location backend
-try {
-    Invoke-Checked uv run ruff format --check .
-    Invoke-Checked uv run ruff check .
-    Invoke-Checked uv run pyright
-    Invoke-Checked uv run pytest
-}
-finally {
-    Pop-Location
-}
-
-Push-Location frontend
-try {
-    Invoke-Checked $Npm run test
-    Invoke-Checked $Npm run typecheck
-    Invoke-Checked $Npm run lint
-    Invoke-Checked $Npm run build
-}
-finally {
-    Pop-Location
-}
-'@
-    }
-
-    if ($Profile -eq "game") {
-        Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
-
-Push-Location backend
-try {
-    Invoke-Checked uv run ruff check . --fix
-    Invoke-Checked uv run ruff format .
-    Invoke-Checked uv run ruff check .
-    Invoke-Checked uv run pyright
-    Invoke-Checked uv run pytest
-}
-finally {
-    Pop-Location
-}
-
-Push-Location frontend
-try {
-    Invoke-Checked $Npm run test --if-present
-    Invoke-Checked $Npm run test:e2e --if-present
-    Invoke-Checked $Npm run lint
-    Invoke-Checked $Npm run build
-}
-finally {
-    Pop-Location
-}
-'@
-    }
-    else {
-        Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-$Npm = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
-
-Push-Location backend
-try {
-    Invoke-Checked uv run ruff check . --fix
-    Invoke-Checked uv run ruff format .
-    Invoke-Checked uv run ruff check .
-    Invoke-Checked uv run pyright
-    Invoke-Checked uv run pytest
-}
-finally {
-    Pop-Location
-}
-
-Push-Location frontend
-try {
-    Invoke-Checked $Npm run test
-    Invoke-Checked $Npm run typecheck
-    Invoke-Checked $Npm run lint
-    Invoke-Checked $Npm run build
-}
-finally {
-    Pop-Location
-}
-'@
-    }
+    # Every profile gets the same cross-platform helper scripts from
+    # templates/scripts/<profile>/.
+    Write-TemplateFile -TemplateName "scripts/$Profile/check.py" -Path (Join-Path "scripts" "check.py")
+    Write-TemplateFile -TemplateName "scripts/$Profile/fix.py" -Path (Join-Path "scripts" "fix.py")
 
     $FrontendSetupExtra = if ($Profile -eq "game") { "    Push-Location frontend; npm exec playwright install chromium; Pop-Location`n" } else { "" }
 
@@ -997,8 +826,8 @@ npm install), and run the checks.
 
 Backend source lives in backend/src/$BackendPackageName/. Frontend source lives in frontend/src/.
 
-    .\scripts\check.ps1
-    .\scripts\fix.ps1
+    uv run scripts/check.py
+    uv run scripts/fix.py
     Push-Location backend; uv run uvicorn $BackendPackageName.main:app --reload; Pop-Location
     Push-Location frontend; npm run dev; Pop-Location
 "@
@@ -1009,7 +838,7 @@ repos:
     hooks:
       - id: project-check
         name: project check
-        entry: powershell -ExecutionPolicy Bypass -File scripts/check.ps1
+        entry: uv run scripts/check.py
         language: system
         pass_filenames: false
         stages: [pre-push]
@@ -1180,7 +1009,7 @@ jobs:
     }
 
     Write-Host ""
-    Write-Host "Done. Next: .\scripts\check.ps1"
+    Write-Host "Done. Next: uv run scripts/check.py"
     exit 0
 }
 
@@ -1264,7 +1093,7 @@ indent-style = "space"
 line-ending = "auto"
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "scripts"]
 exclude = [
     ".venv",
     ".pytest_cache",
@@ -1431,65 +1260,22 @@ repos:
         stages: [pre-push]
 '@
 
-New-Item -ItemType Directory -Path "scripts" -Force | Out-Null
-
-Write-TextFile -Path (Join-Path "scripts" "check.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-Invoke-Checked uv run ruff format --check .
-Invoke-Checked uv run ruff check .
-Invoke-Checked uv run pyright
-Invoke-Checked uv run pytest
-'@
-
-Write-TextFile -Path (Join-Path "scripts" "fix.ps1") -Content @'
-$ErrorActionPreference = "Stop"
-
-function Invoke-Checked {
-    param(
-        [Parameter(Mandatory)] [string]$Command,
-        [Parameter(ValueFromRemainingArguments)] [string[]]$Arguments
-    )
-
-    & $Command @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
-}
-
-Invoke-Checked uv run ruff check . --fix
-Invoke-Checked uv run ruff format .
-Invoke-Checked uv run ruff check .
-Invoke-Checked uv run pyright
-Invoke-Checked uv run pytest
-'@
+# desktop shares the base pair of helper scripts.
+Write-TemplateFile -TemplateName "scripts/base/check.py" -Path (Join-Path "scripts" "check.py")
+Write-TemplateFile -TemplateName "scripts/base/fix.py" -Path (Join-Path "scripts" "fix.py")
 
 if ($Profile -eq "desktop") {
     $ReadmeCommands = @"
     uv run python -m $PackageName
-    .\scripts\check.ps1
-    .\scripts\fix.ps1
+    uv run scripts/check.py
+    uv run scripts/fix.py
 "@
     $SourceDescription = "Source code lives in src/$PackageName/. UI code lives in src/$PackageName/ui/. Tests live in tests/."
 }
 else {
     $ReadmeCommands = @"
-    .\scripts\check.ps1
-    .\scripts\fix.ps1
+    uv run scripts/check.py
+    uv run scripts/fix.py
 "@
     $SourceDescription = "Source code lives in src/$PackageName/. Tests live in tests/."
 }
@@ -1567,4 +1353,4 @@ if (-not $NoInstallHooks) {
 }
 
 Write-Host ""
-Write-Host "Done. Next: .\scripts\check.ps1"
+Write-Host "Done. Next: uv run scripts/check.py"

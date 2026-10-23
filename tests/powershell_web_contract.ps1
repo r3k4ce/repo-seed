@@ -49,20 +49,30 @@ function Assert-ExactPinsOnly {
     }
 }
 
-function Assert-InOrder {
+# Generated helper scripts must be exact copies of templates/scripts/<profile>/,
+# with no per-platform shell scripts alongside them.
+function Assert-ProjectScripts {
     param(
-        [Parameter(Mandatory)] [string]$Path,
-        [Parameter(Mandatory)] [string[]]$Expected
+        [Parameter(Mandatory)] [string]$ProfileName,
+        [Parameter(Mandatory)] [string]$ProjectDir
     )
 
-    $content = Get-Content -Raw -LiteralPath $Path
-    $offset = 0
-    foreach ($needle in $Expected) {
-        $found = $content.IndexOf($needle, $offset)
-        if ($found -lt 0) {
-            throw "Expected $Path to contain: $needle"
+    foreach ($task in @("check", "fix")) {
+        $template = Join-Path $PSScriptRoot "../templates/scripts/$ProfileName/$task.py"
+        $generated = Join-Path $ProjectDir "scripts/$task.py"
+        if (-not (Test-Path -LiteralPath $generated)) {
+            throw "Expected generated script: $generated"
         }
-        $offset = $found + $needle.Length
+        $expectedBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $template))
+        $actualBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $generated))
+        if ([System.Convert]::ToBase64String($expectedBytes) -ne [System.Convert]::ToBase64String($actualBytes)) {
+            throw "Expected $generated to equal templates/scripts/$ProfileName/$task.py"
+        }
+    }
+    foreach ($leftover in @("check.sh", "fix.sh", "check.ps1", "fix.ps1")) {
+        if (Test-Path -LiteralPath (Join-Path $ProjectDir "scripts/$leftover")) {
+            throw "Expected no scripts/$leftover in generated project: $ProjectDir"
+        }
     }
 }
 
@@ -145,8 +155,6 @@ exit /b 0
 
     $PackageJson = Join-Path $ProjectDir "frontend/package.json"
     $ViteConfig = Join-Path $ProjectDir "frontend/vite.config.ts"
-    $CheckScript = Join-Path $ProjectDir "scripts/check.ps1"
-    $FixScript = Join-Path $ProjectDir "scripts/fix.ps1"
     $PreCommit = Join-Path $ProjectDir ".pre-commit-config.yaml"
     $CiYaml = Join-Path $ProjectDir ".github/workflows/ci.yml"
     $AgentsFile = Join-Path $ProjectDir "AGENTS.md"
@@ -182,20 +190,9 @@ exit /b 0
     Assert-Contains -Path $ViteConfig -Expected '"src/test/**"'
     Assert-Contains -Path $ViteConfig -Expected '"**/*.test.{ts,tsx}"'
 
-    $WebCheckOrder = @(
-        'Invoke-Checked $Npm run test',
-        'Invoke-Checked $Npm run typecheck',
-        'Invoke-Checked $Npm run lint',
-        'Invoke-Checked $Npm run build'
-    )
-    Assert-InOrder -Path $CheckScript -Expected $WebCheckOrder
-    Assert-InOrder -Path $FixScript -Expected $WebCheckOrder
-    Assert-NotContains -Path $CheckScript -Unexpected "--if-present"
-    Assert-NotContains -Path $CheckScript -Unexpected "test:e2e"
-    Assert-NotContains -Path $FixScript -Unexpected "--if-present"
-    Assert-NotContains -Path $FixScript -Unexpected "test:e2e"
 
-    Assert-Contains -Path $PreCommit -Expected 'powershell -ExecutionPolicy Bypass -File scripts/check.ps1'
+    Assert-ProjectScripts -ProfileName web -ProjectDir $ProjectDir
+    Assert-Contains -Path $PreCommit -Expected 'entry: uv run scripts/check.py'
 
     Assert-Contains -Path $CiYaml -Expected '- name: Frontend test'
     Assert-Contains -Path $CiYaml -Expected 'run: npm run test'
@@ -231,6 +228,8 @@ exit /b 0
     $GamePackageJson = Join-Path $GameDir "frontend/package.json"
     Assert-NotContains -Path $GamePackageJson -Unexpected '"vitest"'
     Assert-NotContains -Path $GamePackageJson -Unexpected '"@vitest/coverage-v8"'
+    Assert-ProjectScripts -ProfileName game -ProjectDir $GameDir
+    Assert-Contains -Path (Join-Path $GameDir ".pre-commit-config.yaml") -Expected 'entry: uv run scripts/check.py'
 
     Write-Host "PowerShell web contract passed"
 }
