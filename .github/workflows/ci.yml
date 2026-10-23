@@ -30,6 +30,12 @@ jobs:
       - name: Contract tests
         run: bash tests/cross_platform_contract.sh
 
+      - name: Script template contract
+        run: bash tests/script_templates_contract.sh
+
+      - name: Script template lint
+        run: bash tests/lint_script_templates.sh
+
       - name: Scaffold e2e (base, web, game)
         env:
           REPOSEED_E2E_GAME: "1"
