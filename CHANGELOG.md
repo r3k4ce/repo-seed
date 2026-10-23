@@ -21,6 +21,11 @@ See the README for the current project description and usage.
 
 ### Changed
 
+- Generated projects now get `scripts/check.py` and `scripts/fix.py`, run
+  with `uv run scripts/check.py`, instead of `check.sh`/`fix.sh` or
+  `check.ps1`/`fix.ps1`. Both scaffolders write identical scripts, so a
+  project works on Linux and Windows. The `web`/`game` pre-push hook runs
+  `uv run scripts/check.py`. Existing projects are not changed.
 - Python dependencies are added with exact `==` pins instead of "whatever is
   newest today".
 - Frontend `package.json` files use exact versions instead of `^` ranges, and

@@ -49,7 +49,7 @@ See [Usage](#usage) for the full option list.
 - **Ruff** for linting and formatting
 - **Pyright** for static type checking (mode configurable via `-TypeMode`)
 - **pytest** with coverage (branch coverage, 80% fail-under)
-- **Bash or PowerShell** check/fix scripts to run everything
+- **Cross-platform check/fix scripts** (`uv run scripts/check.py`, `uv run scripts/fix.py`) that work the same on Linux and Windows
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
 - **Exact, tested dependency versions** from [`versions.env`](versions.env), so every
@@ -61,8 +61,11 @@ RepoSeed v1 officially targets Linux with Bash and Windows with PowerShell 7+.
 The Bash script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
 macOS is not an official target yet.
 
-- **Bash** — required on Linux to run `install.sh`, `new-project.sh`, and generated `scripts/*.sh`.
-- **PowerShell 7+** — required on Windows to run `install.ps1`, `new-project.ps1`, and generated `scripts/*.ps1`.
+- **Bash** — required on Linux to run `install.sh` and `new-project.sh`.
+- **PowerShell 7+** — required on Windows to run `install.ps1` and `new-project.ps1`.
+
+Generated projects need neither shell: their `scripts/check.py` and `scripts/fix.py`
+run with `uv` on both platforms, whichever scaffolder created them.
 - **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
 - **Node.js with `npm`** — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
 - **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `--no-git` or `-NoGit` to skip explicitly.
@@ -88,7 +91,7 @@ cd ~/Code/my-app
 reposeed
 
 # 4. Run the generated checks
-./scripts/check.sh
+uv run scripts/check.py
 ```
 
 On Windows with PowerShell 7+:
@@ -105,7 +108,7 @@ Set-Location ~/Code/my-app
 reposeed
 
 # 4. Run the generated checks
-.\scripts\check.ps1
+uv run scripts/check.py
 ```
 
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
@@ -131,7 +134,7 @@ $ cd ~/Code/demo-app
 $ reposeed
 Creating Python project: demo-app (demo_app, Python 3.12, pyright standard, profile base)
 Initialized project `demo-app`
-Done. Next: ./scripts/check.sh
+Done. Next: uv run scripts/check.py
 ```
 
 ```text
@@ -144,8 +147,8 @@ Done. Next: ./scripts/check.sh
 |-- .gitignore
 |-- .pre-commit-config.yaml
 |-- scripts/
-|   |-- check.sh
-|   `-- fix.sh
+|   |-- check.py
+|   `-- fix.py
 |-- src/demo_app/
 |   `-- __init__.py
 `-- tests/
@@ -153,11 +156,16 @@ Done. Next: ./scripts/check.sh
 ```
 
 ```console
-$ ./scripts/check.sh
-ruff format --check .   2 files already formatted
-ruff check .            All checks passed!
-pyright                 0 errors, 0 warnings, 0 informations
-pytest                  1 passed in 0.21s
+$ uv run scripts/check.py
+> uv run ruff format --check .
+5 files already formatted
+> uv run ruff check .
+All checks passed!
+> uv run pyright
+0 errors, 0 warnings, 0 informations
+> uv run pytest
+...
+1 passed in 0.05s
 ```
 
 ## Usage
@@ -282,12 +290,12 @@ Options:
 |-- src/<package>/
 |-- tests/
 |-- scripts/
-|   |-- check.sh
-|   `-- fix.sh
+|   |-- check.py
+|   `-- fix.py
 `-- pyproject.toml
 ```
 
-Entrypoint: Python package in `src/<package>/`. Check with `./scripts/check.sh` for Bash-generated projects or `.\scripts\check.ps1` for PowerShell-generated projects.
+Entrypoint: Python package in `src/<package>/`. Check with `uv run scripts/check.py`, the same command on every platform and profile.
 
 ### `desktop`
 
