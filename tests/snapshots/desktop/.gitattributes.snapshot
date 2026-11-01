@@ -1,0 +1,36 @@
+* text=auto
+
+# Source/config files: always LF
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
+*.sql text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+
+# Windows command scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.sqlite binary
+*.db binary

@@ -1,0 +1,77 @@
+[project]
+name = "demo-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+demo-app = "demo_app:main"
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14.0"]
+build-backend = "uv_build"
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "I",    # import sorting
+    "B",    # bugbear: likely bugs
+    "UP",   # pyupgrade: modern Python syntax
+    "SIM",  # simplifications
+    "C4",   # cleaner comprehensions
+    "PT",   # pytest style
+    "RUF"   # Ruff-specific rules
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+exclude = [
+    ".venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "**/__pycache__",
+    "**/*.egg-info"
+]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
+reportMissingTypeStubs = false
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers --strict-config --cov --cov-report=term-missing:skip-covered --cov-report=xml"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    ".venv/*",
+    "tests/*",
+    "src/*/__main__.py"
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError"
+]

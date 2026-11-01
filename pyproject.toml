@@ -30,7 +30,8 @@ addopts = "-m 'not e2e'"
 line-length = 100
 target-version = "py310"
 # Templates contain __PLACEHOLDER__ names and are checked by tests/lint_script_templates.sh.
-extend-exclude = ["src/reposeed/templates", "docs"]
+# Snapshots are generated projects with their own Ruff settings; they are compared, not linted.
+extend-exclude = ["src/reposeed/templates", "tests/snapshots", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PT", "RUF"]

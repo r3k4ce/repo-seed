@@ -1,0 +1,6 @@
+uv --version | .
+uv init --package --name demo-app --python 3.12 | .
+uv add --dev ruff==0.16.9 pytest==9.1.1 pytest-cov==7.1.0 pyright==1.1.414 pre-commit==4.6.2 | .
+uv add python-dotenv==1.2.3 | .
+uv run pre-commit install | .
+uv run pre-commit install --hook-type pre-push | .

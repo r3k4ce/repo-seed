@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: project-check
+        name: project check
+        entry: uv run scripts/check.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

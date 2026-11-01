@@ -1,0 +1,29 @@
+{
+  "name": "demo-app-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "phaser": "4.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "vite": "8.3.1"
+  }
+}

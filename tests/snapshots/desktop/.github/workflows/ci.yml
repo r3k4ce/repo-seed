@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install
+
+      - name: Sync dependencies
+        run: uv sync --locked --dev
+
+      - name: Ruff format check
+        run: uv run --locked ruff format --check .
+
+      - name: Ruff lint
+        run: uv run --locked ruff check .
+
+      - name: Pyright
+        run: uv run --locked pyright
+
+      - name: Pytest
+        run: uv run --locked pytest
