@@ -54,7 +54,7 @@ def _fake_tools(case_dir: Path, tools: tuple[str, ...] = ("uv", "npm")) -> tuple
             source = source_dir / f"{tool}.py"
             source.write_text(body, encoding="utf-8")
             shim = f'@"{sys.executable}" "{source}" %*\r\n@exit /b %errorlevel%\r\n'
-            (bin_dir / f"{tool}.cmd").write_text(shim, encoding="utf-8")
+            (bin_dir / f"{tool}.cmd").write_bytes(shim.encode())
         else:
             script = bin_dir / tool
             script.write_text(f"#!{sys.executable}\n{body}", encoding="utf-8")
