@@ -1,5 +1,6 @@
 """Project creation: runs one profile from ``profiles.py`` in the current folder."""
 
+import keyword
 import sys
 from collections.abc import Mapping
 from pathlib import Path
@@ -69,7 +70,7 @@ def _context(profile: Profile, options: "Options", versions: Mapping[str, str]) 
         "PROFILE": profile.name,
         "PROJECT_NAME": project,
         "PACKAGE_NAME": package,
-        "BACKEND_PACKAGE_NAME": f"{package}_backend",
+        "BACKEND_PACKAGE_NAME": f"{package}_{BACKEND}",
         "PYTHON_VERSION": options.python,
         "RUFF_TARGET": ruff_target(options.python),
         "TYPE_MODE": options.type_mode,
@@ -88,6 +89,25 @@ def _check_folder(profile: Profile, root: Path, home: Path) -> None:
     for path in profile.fresh_paths:
         if (root / path).exists():
             raise SetupError(f"{path} already exists. Run this only in a fresh project directory.")
+
+
+def _check_names(profile: Profile, project: str) -> None:
+    """Refuse names that would generate a project unable to import or install itself."""
+    if profile.layout == "single":
+        uv_project, package = project, package_name(project)
+    else:
+        uv_project, package = f"{project}-{BACKEND}", f"{package_name(project)}_{BACKEND}"
+    if not package.isidentifier() or keyword.iskeyword(package):
+        raise SetupError(
+            f'"{package}" is not a valid Python package name (from project name "{project}"). '
+            "Pass --name with a name that starts with a letter and is not a Python keyword."
+        )
+    installed = {project_name(PIN_PACKAGES[key]) for add in profile.uv_adds for key in add.pins}
+    if uv_project in installed:
+        raise SetupError(
+            f'The project name "{uv_project}" is also the name of a package RepoSeed installs. '
+            "Pass --name with a different name."
+        )
 
 
 def _uv_add_command(add: UvAdd, versions: Mapping[str, str]) -> list[str]:
@@ -158,6 +178,7 @@ def create(options: "Options", runner: Runner, cwd: Path, home: Path) -> None:
     if profile is None:
         raise SetupError(f"The {options.profile} profile is not available yet.")
     _check_folder(profile, cwd, home)
+    _check_names(profile, project_name(options.name))
 
     versions = bundled_versions()
     require_uv(runner, _pin(versions, "UV_MIN"))

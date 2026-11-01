@@ -170,6 +170,66 @@ def test_refuses_existing_pyproject(tmp_path: Path) -> None:
     assert runner.calls == []
 
 
+@pytest.mark.parametrize(
+    ("name", "profile", "package", "project"),
+    [
+        ("123", "base", "123", "123"),
+        ("2048 Game", "desktop", "2048_game", "2048-game"),
+        ("2048", "web", "2048_backend", "2048"),
+        ("class", "base", "class", "class"),
+        ("import", "desktop", "import", "import"),
+    ],
+)
+def test_refuses_invalid_package_name(
+    tmp_path: Path, name: str, profile: str, package: str, project: str
+) -> None:
+    project_dir = _project(tmp_path)
+    runner = FakeRunner(project_dir)
+    with pytest.raises(SetupError) as info:
+        create(replace(BASE, name=name, profile=profile), runner, project_dir, tmp_path / "home")
+    assert str(info.value) == (
+        f'"{package}" is not a valid Python package name (from project name "{project}"). '
+        "Pass --name with a name that starts with a letter and is not a Python keyword."
+    )
+    assert runner.calls == []
+    assert list(project_dir.iterdir()) == []
+
+
+# "class_backend" is a valid package; the split layout's uv project is "<name>-backend",
+# so it never clashes with a package RepoSeed installs; base does not install PySide6.
+@pytest.mark.parametrize(
+    ("name", "profile"),
+    [("class", "web"), ("demo-2048", "base"), ("pytest", "game"), ("pyside6", "base")],
+)
+def test_accepts_valid_project_name(tmp_path: Path, name: str, profile: str) -> None:
+    project = _project(tmp_path)
+    _create(replace(BASE, name=name, profile=profile), project)
+    assert (project / "README.md").is_file()
+
+
+@pytest.mark.parametrize(
+    ("name", "profile", "project"),
+    [
+        ("pytest", "base", "pytest"),
+        ("Python_Dotenv", "base", "python-dotenv"),
+        ("PySide6", "desktop", "pyside6"),
+        ("pre-commit", "desktop", "pre-commit"),
+    ],
+)
+def test_refuses_name_of_installed_package(
+    tmp_path: Path, name: str, profile: str, project: str
+) -> None:
+    project_dir = _project(tmp_path)
+    runner = FakeRunner(project_dir)
+    with pytest.raises(SetupError) as info:
+        create(replace(BASE, name=name, profile=profile), runner, project_dir, tmp_path / "home")
+    assert str(info.value) == (
+        f'The project name "{project}" is also the name of a package RepoSeed installs. '
+        "Pass --name with a different name."
+    )
+    assert runner.calls == []
+
+
 def test_missing_uv(tmp_path: Path) -> None:
     project = _project(tmp_path)
     runner = FakeRunner(project, missing=["uv"])

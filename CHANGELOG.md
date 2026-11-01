@@ -64,6 +64,10 @@ See the README for the current project description and usage.
 
 - Generated `desktop` CI installs `libegl1` before syncing dependencies, so
   PySide6 imports no longer fail on `ubuntu-latest`.
+- A project name that does not give a valid Python package (for example a
+  folder called `2048`, or `--name class`) is refused before anything is
+  written, instead of generating a project that fails its own checks. So is
+  a name equal to a package RepoSeed installs (for example `--name pytest`).
 
 ### Removed
 
