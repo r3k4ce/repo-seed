@@ -15,6 +15,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
 from reposeed.tools import Runner
+from reposeed.versions import bundled_versions
 
 FAKE_ROOT_ENV = "FAKE_PROJECT_ROOT"
 """Environment variable naming the project folder that ``fake_bin`` logs relative to."""
@@ -76,7 +77,13 @@ class FakeRunner(Runner):
         self.root = root
         self.calls: list[str] = []
         self.missing = set(missing)
-        self.outputs = {"uv": "uv 0.13.3 (fake)", "node": "v22.13.0", **(outputs or {})}
+        # The oldest uv and Node.js that versions.env allows.
+        versions = bundled_versions()
+        self.outputs = {
+            "uv": f"uv {versions['UV_MIN']} (fake)",
+            "node": f"v{versions['NODE_MIN']}",
+            **(outputs or {}),
+        }
 
     def run(self, command: Sequence[str], cwd: Path) -> None:
         self.calls.append(f"{' '.join(command)} | {_relative(cwd, self.root)}")

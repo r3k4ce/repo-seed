@@ -46,7 +46,9 @@ See the README for the current project description and usage.
   newest today".
 - Frontend `package.json` files use exact versions instead of `^` ranges, and
   the `game` profile no longer uses `"latest"` for any package.
-- Tests assert against `versions.env` instead of hard-coded version strings.
+- The unit tests take their expected versions from `versions.env` instead of
+  hard-coding them; the snapshots in `tests/snapshots/` record the pinned
+  versions and are regenerated on a bump (see `docs/versioning.md`).
 - The web/game bootstrap runs `npm install --no-audit --legacy-peer-deps`.
   npm 10's peer-set loader crashes (`Cannot read properties of null (reading
   'edgesOut')`) on the generated dependency tree; the flag avoids it. Because

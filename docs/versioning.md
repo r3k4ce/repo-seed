@@ -56,14 +56,29 @@ checks, instead of debugging someone else's release on day one.
    The bootstrap install uses `--legacy-peer-deps`, which does not install
    peers automatically, so any required peer (today `@testing-library/dom`
    for `@testing-library/react`) must be pinned in `versions.env` itself.
-2. Run the tests (the same commands on Linux and Windows):
+2. If you changed `PY_RUFF`, `PY_PYTEST` or `PY_PYRIGHT`, set the same
+   version in the `dev` group of RepoSeed's own `pyproject.toml` and run
+   `uv lock`. RepoSeed checks itself with these tools, and
+   `tests/test_package.py` fails while the two disagree.
+3. Regenerate the test snapshots, which record the pinned versions written
+   into every profile, and review the change. Only the versions you bumped
+   may differ:
+
+   ```bash
+   uv run pytest --update-snapshots tests/test_snapshots.py
+   git diff tests/snapshots
+   ```
+
+4. Run the tests (the same commands on Linux and Windows):
 
    ```bash
    uv run pytest
    REPOSEED_E2E_GAME=1 uv run pytest -m e2e
    ```
 
-3. Commit `src/reposeed/versions.env` with a short note in `CHANGELOG.md`.
+5. Commit `src/reposeed/versions.env` together with the regenerated
+   `tests/snapshots/` (and `pyproject.toml` and `uv.lock` from step 2), with
+   a short note in `CHANGELOG.md`.
 
 Bumping the minimum tool versions (`UV_MIN`, `NODE_MIN`) follows the same
 steps. Raise `NODE_MIN` whenever a pinned npm package's `engines.node`

@@ -280,7 +280,8 @@ project. Three things make that hold:
   tests on Linux and Windows on every push and on a weekly schedule, so upstream
   drift is caught before it costs you a project start.
 
-To upgrade the pinned versions, edit `src/reposeed/versions.env`, run the tests, and commit.
+To upgrade the pinned versions, edit `src/reposeed/versions.env`, regenerate the
+test snapshots, run the tests, and commit.
 The full procedure is in [docs/versioning.md](docs/versioning.md).
 
 Run the tests locally from a checkout:

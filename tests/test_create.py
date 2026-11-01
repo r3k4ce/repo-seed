@@ -22,9 +22,21 @@ BASE = Options(
     no_github_actions=False,
 )
 
+VERSIONS = bundled_versions()
+
+
+def pin(key: str) -> str:
+    """The ``uv add`` argument for a ``versions.env`` key, such as ``ruff==0.16.9``."""
+    return f"{PIN_PACKAGES[key]}=={VERSIONS[key]}"
+
+
 DEV_ADD = (
-    "uv add --dev ruff==0.16.9 pytest==9.1.1 pytest-cov==7.1.0 pyright==1.1.414 "
-    "pre-commit==4.6.2 | ."
+    f"uv add --dev {pin('PY_RUFF')} {pin('PY_PYTEST')} {pin('PY_PYTEST_COV')} "
+    f"{pin('PY_PYRIGHT')} {pin('PY_PRE_COMMIT')} | ."
+)
+RUNTIME_ADD = f"uv add {pin('PY_PYTHON_DOTENV')} | ."
+WEB_RUNTIME_ADD = (
+    f"uv add {pin('PY_PYTHON_DOTENV')} {pin('PY_FASTAPI')} {pin('PY_UVICORN')} | backend"
 )
 NO_HOOKS = "Warning: No .git directory found. Skipping hook installation.\n"
 
@@ -47,7 +59,7 @@ def test_base_calls(tmp_path: Path) -> None:
         "uv --version | .",
         "uv init --package --no-workspace --name demo-app --python 3.12 | .",
         DEV_ADD,
-        "uv add python-dotenv==1.2.3 | .",
+        RUNTIME_ADD,
         "uv run pre-commit install | .",
         "uv run pre-commit install --hook-type pre-push | .",
     ]
@@ -75,7 +87,7 @@ def test_base_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
         "uv --version | .",
         "uv init --package --no-workspace --name demo-app --python 3.12 --vcs none | .",
         DEV_ADD,
-        "uv add python-dotenv==1.2.3 | .",
+        RUNTIME_ADD,
     ]
     assert not (project / ".git").exists()
     captured = capsys.readouterr()
@@ -247,7 +259,7 @@ WEB_CALLS = [
     "node --version | .",
     "git init | .",
     WEB_INIT,
-    "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
+    WEB_RUNTIME_ADD,
     DEV_ADD.replace("| .", "| backend"),
     "npm install --no-audit --legacy-peer-deps | frontend",
     "uv --project backend run pre-commit install --hook-type pre-push | .",
@@ -277,7 +289,7 @@ def test_web_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         "uv --version | .",
         "node --version | .",
         WEB_INIT,
-        "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
+        WEB_RUNTIME_ADD,
         DEV_ADD.replace("| .", "| backend"),
         "npm install --no-audit --legacy-peer-deps | frontend",
     ]
@@ -356,8 +368,8 @@ def test_web_files(tmp_path: Path) -> None:
     )
     package = (project / "frontend/package.json").read_text(encoding="utf-8")
     assert '"name": "demo-app-frontend",' in package
-    assert '"node": ">=22.13.0"' in package
-    assert '"react": "19.3.0",' in package
+    assert f'"node": ">={VERSIONS["NODE_MIN"]}"' in package
+    assert f'"react": "{VERSIONS["NPM_REACT"]}",' in package
     assert '<script type="module" src="/src/main.tsx"></script>' in (
         project / "frontend/index.html"
     ).read_text(encoding="utf-8")
@@ -473,7 +485,7 @@ def test_game_files(tmp_path: Path) -> None:
 
 
 DESKTOP = replace(BASE, profile="desktop")
-PYSIDE6_ADD = "uv add PySide6==6.11.2 | ."
+PYSIDE6_ADD = f"uv add {pin('PY_PYSIDE6')} | ."
 DESKTOP_PATHS = [
     "src/demo_app/__main__.py",
     "src/demo_app/models/__init__.py",
@@ -487,7 +499,7 @@ DESKTOP_PATHS = [
 def test_desktop_calls(tmp_path: Path) -> None:
     base = _create(BASE, _project(tmp_path / "base")).calls
     desktop = _create(DESKTOP, _project(tmp_path / "desktop")).calls
-    runtime = base.index("uv add python-dotenv==1.2.3 | .")
+    runtime = base.index(RUNTIME_ADD)
     assert desktop == [*base[: runtime + 1], PYSIDE6_ADD, *base[runtime + 1 :]]
 
 

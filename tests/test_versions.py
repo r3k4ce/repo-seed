@@ -2,6 +2,7 @@ import re
 
 import pytest
 
+from reposeed.profiles import PIN_PACKAGES
 from reposeed.versions import VersionsError, bundled_versions, load_versions
 
 
@@ -20,5 +21,5 @@ def test_load_versions_rejects_bad_value() -> None:
         load_versions("PY_RUFF=1;2\n")
 
 
-def test_bundled_versions() -> None:
-    assert bundled_versions()["PY_PYTEST"] == "9.1.1"
+def test_bundled_versions_has_every_key() -> None:
+    assert {"UV_MIN", "NODE_MIN", *PIN_PACKAGES} <= bundled_versions().keys()
