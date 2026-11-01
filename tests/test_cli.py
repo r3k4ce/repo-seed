@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import pytest
@@ -122,3 +123,61 @@ def test_main_maps_errors(
     assert captured.err == message
     assert captured.out == ""
     assert "Traceback" not in captured.err
+
+
+@pytest.mark.parametrize(
+    ("error", "code", "message"),
+    [
+        (KeyboardInterrupt(), 130, f"{INCOMPLETE}\n"),
+        (
+            FileNotFoundError(2, "No such file or directory", "frontend"),
+            1,
+            f"error: [Errno 2] No such file or directory: 'frontend'\n{INCOMPLETE}\n",
+        ),
+        (
+            PermissionError(13, "Permission denied"),
+            1,
+            f"error: [Errno 13] Permission denied\n{INCOMPLETE}\n",
+        ),
+    ],
+    ids=["interrupt", "missing-file", "permission"],
+)
+def test_main_maps_interrupt_and_os_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    error: BaseException,
+    code: int,
+    message: str,
+) -> None:
+    def failing_create(options: Options, runner: object, cwd: Path, home: Path) -> None:
+        raise error
+
+    monkeypatch.setattr(reposeed.create, "create", failing_create)
+    assert main([]) == code
+    captured = capsys.readouterr()
+    assert captured.err == message
+    assert captured.out == ""
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows cannot delete the current folder")
+@pytest.mark.parametrize("argv", [[], ["--name", "demo"]])
+def test_main_reports_missing_working_folder(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+) -> None:
+    def unexpected_create(options: Options, runner: object, cwd: Path, home: Path) -> None:
+        raise AssertionError("create must not run")
+
+    monkeypatch.setattr(reposeed.create, "create", unexpected_create)
+    folder = tmp_path / "gone"
+    folder.mkdir()
+    monkeypatch.chdir(folder)
+    folder.rmdir()
+    assert main(argv) == 1
+    captured = capsys.readouterr()
+    assert captured.err.startswith("error: [Errno 2] ")
+    assert captured.err.count("\n") == 1
+    assert INCOMPLETE not in captured.err
+    assert captured.out == ""

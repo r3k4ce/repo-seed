@@ -71,6 +71,9 @@ See the README for the current project description and usage.
 - Running RepoSeed in a folder below another Python project no longer adds
   the new project to the parent's uv workspace and `uv.lock`: `uv init` now
   gets `--no-workspace`.
+- Ctrl-C and operating-system errors (a deleted working folder, a failed file
+  write) no longer print a Python traceback. Ctrl-C exits with status 130;
+  both print the "project folder is incomplete" hint once files may exist.
 
 ### Removed
 

@@ -77,20 +77,38 @@ def parse_args(argv: Sequence[str] | None = None) -> Options:
     )
 
 
+INCOMPLETE = "The project folder is incomplete; delete it and run reposeed again."
+
+
+def _fail(code: int, error: BaseException | None = None, *, incomplete: bool = False) -> int:
+    """Print ``error: <error>`` and, once files may exist, the incomplete-folder hint."""
+    if error is not None:
+        print(f"error: {error}", file=sys.stderr)
+    if incomplete:
+        print(INCOMPLETE, file=sys.stderr)
+    return code
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    options = parse_args(argv)
+    try:
+        # Path.cwd() fails when the working folder was deleted; nothing is written yet.
+        options = parse_args(argv)
+        cwd, home = Path.cwd(), Path.home()
+    except KeyboardInterrupt:
+        return 130
+    except OSError as error:
+        return _fail(1, error)
+
     from reposeed.create import create  # imported late so tests can replace it
 
     try:
-        create(options, SubprocessRunner(), Path.cwd(), Path.home())
+        create(options, SubprocessRunner(), cwd, home)
     except (SetupError, VersionsError, TemplateError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 1
+        return _fail(1, error)
     except CommandError as error:
-        print(f"error: {error}", file=sys.stderr)
-        print(
-            "The project folder is incomplete; delete it and run reposeed again.",
-            file=sys.stderr,
-        )
-        return error.code
+        return _fail(error.code, error, incomplete=True)
+    except KeyboardInterrupt:
+        return _fail(130, incomplete=True)
+    except OSError as error:
+        return _fail(1, error, incomplete=True)
     return 0
