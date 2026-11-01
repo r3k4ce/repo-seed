@@ -18,6 +18,7 @@ See the README for the current project description and usage.
   snapshot, wheel and script-template tests, and the scaffold e2e tests on
   Linux and Windows, on every push and weekly, to catch upstream drift.
 - `docs/versioning.md` describes the version policy and the bump procedure.
+- `reposeed --version` prints `reposeed <version>`.
 
 ### Changed
 
