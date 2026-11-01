@@ -68,6 +68,9 @@ See the README for the current project description and usage.
   folder called `2048`, or `--name class`) is refused before anything is
   written, instead of generating a project that fails its own checks. So is
   a name equal to a package RepoSeed installs (for example `--name pytest`).
+- Running RepoSeed in a folder below another Python project no longer adds
+  the new project to the parent's uv workspace and `uv.lock`: `uv init` now
+  gets `--no-workspace`.
 
 ### Removed
 

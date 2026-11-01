@@ -45,7 +45,7 @@ def test_base_calls(tmp_path: Path) -> None:
     runner = _create(BASE, _project(tmp_path))
     assert runner.calls == [
         "uv --version | .",
-        "uv init --package --name demo-app --python 3.12 | .",
+        "uv init --package --no-workspace --name demo-app --python 3.12 | .",
         DEV_ADD,
         "uv add python-dotenv==1.2.3 | .",
         "uv run pre-commit install | .",
@@ -73,7 +73,7 @@ def test_base_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
     runner = _create(replace(BASE, no_git=True), project)
     assert runner.calls == [
         "uv --version | .",
-        "uv init --package --name demo-app --python 3.12 --vcs none | .",
+        "uv init --package --no-workspace --name demo-app --python 3.12 --vcs none | .",
         DEV_ADD,
         "uv add python-dotenv==1.2.3 | .",
     ]
@@ -239,11 +239,14 @@ def test_missing_uv(tmp_path: Path) -> None:
 
 
 WEB = replace(BASE, profile="web")
+WEB_INIT = (
+    "uv init --package --no-workspace --name demo-app-backend --python 3.12 --vcs none backend | ."
+)
 WEB_CALLS = [
     "uv --version | .",
     "node --version | .",
     "git init | .",
-    "uv init --package --name demo-app-backend --python 3.12 --vcs none backend | .",
+    WEB_INIT,
     "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
     DEV_ADD.replace("| .", "| backend"),
     "npm install --no-audit --legacy-peer-deps | frontend",
@@ -273,7 +276,7 @@ def test_web_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert runner.calls == [
         "uv --version | .",
         "node --version | .",
-        "uv init --package --name demo-app-backend --python 3.12 --vcs none backend | .",
+        WEB_INIT,
         "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
         DEV_ADD.replace("| .", "| backend"),
         "npm install --no-audit --legacy-peer-deps | frontend",

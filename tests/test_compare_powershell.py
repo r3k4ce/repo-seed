@@ -21,6 +21,21 @@ DELIBERATE_DESKTOP_CHANGES = frozenset({".github/workflows/ci.yml"})
 The spec's deliberate change "install libegl1 in generated desktop CI" adds a step
 to ``.github/workflows/ci.yml``. Nothing else may differ."""
 
+DELIBERATE_COMMAND_CHANGE = " --no-workspace"
+"""Flag the Python scaffolder passes to ``uv init`` and new-project.ps1 does not.
+
+Without it, ``uv init`` below a folder holding a ``pyproject.toml`` makes the new
+project a member of that parent workspace. It is removed from the Python call log
+before the logs are compared; nothing else in the calls may differ."""
+
+
+def _without_deliberate_change(calls: list[str]) -> list[str]:
+    return [
+        call.replace(DELIBERATE_COMMAND_CHANGE, "", 1) if call.startswith("uv init ") else call
+        for call in calls
+    ]
+
+
 pytestmark = pytest.mark.skipif(
     sys.platform != "linux" or shutil.which("pwsh") is None,
     reason="compares against new-project.ps1, which needs pwsh on Linux",
@@ -87,5 +102,5 @@ def test_matches_powershell(
     for path, content in powershell_tree.items():
         if path not in DELIBERATE_DESKTOP_CHANGES:
             assert python_tree[path] == content, path
-    assert python_calls == powershell_calls
+    assert _without_deliberate_change(python_calls) == powershell_calls
     assert powershell_calls[0] == "uv --version | ."

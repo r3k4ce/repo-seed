@@ -162,7 +162,7 @@ if [[ "${1-}" == "init" ]]; then
       --python)
         shift 2
         ;;
-      --package)
+      --package | --no-workspace)
         shift
         ;;
       init)

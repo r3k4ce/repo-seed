@@ -149,7 +149,8 @@ def _python_dir(profile: Profile, root: Path) -> Path:
 def _init_python(
     profile: Profile, options: "Options", project: str, runner: Runner, root: Path
 ) -> None:
-    init = ["uv", "init", "--package", "--name"]
+    # --no-workspace: a parent folder with a pyproject.toml must not adopt the new project.
+    init = ["uv", "init", "--package", "--no-workspace", "--name"]
     if profile.layout == "single":
         init += [project, "--python", options.python]
         if options.no_git:

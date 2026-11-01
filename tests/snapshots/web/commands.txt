@@ -1,7 +1,7 @@
 uv --version | .
 node --version | .
 git init | .
-uv init --package --name demo-app-backend --python 3.12 --vcs none backend | .
+uv init --package --no-workspace --name demo-app-backend --python 3.12 --vcs none backend | .
 uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend
 uv add --dev ruff==0.16.9 pytest==9.1.1 pytest-cov==7.1.0 pyright==1.1.414 pre-commit==4.6.2 | backend
 npm install --no-audit --legacy-peer-deps | frontend
