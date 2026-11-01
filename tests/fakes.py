@@ -2,12 +2,14 @@
 
 ``FakeRunner`` stands in for ``SubprocessRunner`` inside the test process.
 ``fake_bin`` writes Bash scripts for ``uv``, ``node``, ``npm`` and ``git`` so a real
-scaffolder process (new-project.sh or ``python -m reposeed``) can run against
-them. Both record each command as ``"<command> | <cwd relative to the project>"``.
+scaffolder process (new-project.sh, new-project.ps1 or ``python -m reposeed``) can
+run against them, and ``scaffold`` runs one. Both record each command as
+``"<command> | <cwd relative to the project>"``.
 """
 
 import os
 import stat
+import subprocess
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
@@ -225,3 +227,34 @@ def fake_env(bin_dir: Path, root: Path) -> dict[str, str]:
     env["PATH"] = f"{bin_dir}{os.pathsep}{env.get('PATH', '')}"
     env[FAKE_ROOT_ENV] = str(root)
     return env
+
+
+def tree(dir: Path) -> dict[str, bytes]:
+    """Map every file below ``dir`` (outside ``.git/``) to its bytes, keyed by POSIX path."""
+    return {
+        path.relative_to(dir).as_posix(): path.read_bytes()
+        for path in sorted(dir.rglob("*"))
+        if path.is_file() and ".git" not in path.relative_to(dir).parts
+    }
+
+
+def scaffold(
+    command: list[str], project: Path, bin_dir: Path, log: Path
+) -> tuple[dict[str, bytes], list[str], str, str]:
+    """Run a scaffolder in a new ``project`` folder against the fakes in ``bin_dir``.
+
+    Returns the generated tree, the logged calls, stdout and stderr.
+    """
+    project.mkdir()
+    log.write_text("", encoding="utf-8")
+    completed = subprocess.run(
+        command,
+        cwd=project,
+        env=fake_env(bin_dir, project),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    calls = log.read_text(encoding="utf-8").splitlines()
+    return tree(project), calls, completed.stdout, completed.stderr

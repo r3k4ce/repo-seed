@@ -1,0 +1,63 @@
+[tool.ruff]
+line-length = 100
+target-version = "__RUFF_TARGET__"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "I",    # import sorting
+    "B",    # bugbear: likely bugs
+    "UP",   # pyupgrade: modern Python syntax
+    "SIM",  # simplifications
+    "C4",   # cleaner comprehensions
+    "PT",   # pytest style
+    "RUF"   # Ruff-specific rules
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+exclude = [
+    ".venv",
+    ".pytest_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "**/__pycache__",
+    "**/*.egg-info"
+]
+typeCheckingMode = "__TYPE_MODE__"
+pythonVersion = "__PYTHON_VERSION__"
+reportMissingTypeStubs = false
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers --strict-config --cov --cov-report=term-missing:skip-covered --cov-report=xml"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    ".venv/*",
+    "tests/*",
+    "src/*/__main__.py"
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError"
+]

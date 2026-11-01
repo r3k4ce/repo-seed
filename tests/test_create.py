@@ -10,7 +10,7 @@ from reposeed.profiles import PIN_PACKAGES, PROFILES
 from reposeed.render import read_template
 from reposeed.tools import SetupError
 from reposeed.versions import VersionsError, bundled_versions
-from tests.fakes import FakeRunner
+from tests.fakes import FakeRunner, tree
 
 BASE = Options(
     name="demo-app",
@@ -31,7 +31,7 @@ NO_HOOKS = "Warning: No .git directory found. Skipping hook installation.\n"
 
 def _project(tmp_path: Path) -> Path:
     project = tmp_path / "project"
-    project.mkdir()
+    project.mkdir(parents=True)
     return project
 
 
@@ -410,6 +410,93 @@ def test_game_files(tmp_path: Path) -> None:
     assert (project / "scripts/check.py").read_text(encoding="utf-8") == read_template(
         "scripts/game/check.py"
     )
+
+
+DESKTOP = replace(BASE, profile="desktop")
+PYSIDE6_ADD = "uv add PySide6==6.11.2 | ."
+DESKTOP_PATHS = [
+    "src/demo_app/__main__.py",
+    "src/demo_app/models/__init__.py",
+    "src/demo_app/services/__init__.py",
+    "src/demo_app/ui/__init__.py",
+    "src/demo_app/ui/main_window.py",
+    "tests/test_desktop_smoke.py",
+]
+
+
+def test_desktop_calls(tmp_path: Path) -> None:
+    base = _create(BASE, _project(tmp_path / "base")).calls
+    desktop = _create(DESKTOP, _project(tmp_path / "desktop")).calls
+    runtime = base.index("uv add python-dotenv==1.2.3 | .")
+    assert desktop == [*base[: runtime + 1], PYSIDE6_ADD, *base[runtime + 1 :]]
+
+
+def test_desktop_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _create(DESKTOP, _project(tmp_path))
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Creating Python project: demo-app "
+        "(demo_app, Python 3.12, pyright standard, profile desktop)\n"
+        "Adding dev tooling...\n"
+        "Adding runtime dependencies...\n"
+        "Installing pre-commit and pre-push hooks...\n"
+        "\n"
+        "Done. Next: uv run scripts/check.py\n"
+    )
+    assert captured.err == ""
+
+
+def _text_tree(project: Path) -> dict[str, str]:
+    return {path: content.decode("utf-8") for path, content in tree(project).items()}
+
+
+def test_desktop_files(tmp_path: Path) -> None:
+    base_project = _project(tmp_path / "base")
+    desktop_project = _project(tmp_path / "desktop")
+    _create(BASE, base_project)
+    _create(DESKTOP, desktop_project)
+    base = _text_tree(base_project)
+    desktop = _text_tree(desktop_project)
+
+    assert sorted(desktop) == sorted([*base, *DESKTOP_PATHS])
+    # new-project.ps1 differs from new-project.sh in these two shared files.
+    expected = {
+        **base,
+        "README.md": base["README.md"]
+        .replace(
+            "Tests live in tests/.",
+            "UI code lives in src/demo_app/ui/. Tests live in tests/.",
+        )
+        .replace(
+            "    uv run scripts/check.py\n",
+            "    uv run python -m demo_app\n    uv run scripts/check.py\n",
+        ),
+        "pyproject.toml": base["pyproject.toml"].replace(
+            '    "tests/*"\n]', '    "tests/*",\n    "src/*/__main__.py"\n]'
+        ),
+        ".gitattributes": base[".gitattributes"].replace(
+            "*.txt text eol=lf\n", "*.txt text eol=lf\n*.ps1 text eol=lf\n"
+        ),
+    }
+    for path in ("README.md", "pyproject.toml", ".gitattributes"):
+        assert expected[path] != base[path], path
+    assert {path: desktop[path] for path in base} == expected
+
+    assert desktop["README.md"].endswith(
+        "## Commands\n\n"
+        "Source code lives in src/demo_app/. UI code lives in src/demo_app/ui/. "
+        "Tests live in tests/.\n\n"
+        "    uv run python -m demo_app\n"
+        "    uv run scripts/check.py\n"
+        "    uv run scripts/fix.py\n"
+    )
+    for package in ("ui", "models", "services"):
+        assert desktop[f"src/demo_app/{package}/__init__.py"] == "\n"
+    assert 'self.setWindowTitle("demo-app")' in desktop["src/demo_app/ui/main_window.py"]
+    assert "from demo_app.ui.main_window import MainWindow\n" in desktop["src/demo_app/__main__.py"]
+    smoke = desktop["tests/test_desktop_smoke.py"]
+    assert "from demo_app.ui.main_window import MainWindow\n" in smoke
+    assert 'assert window.windowTitle() == "demo-app"' in smoke
 
 
 def test_web_no_github_actions(tmp_path: Path) -> None:

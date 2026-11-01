@@ -1,6 +1,6 @@
 """What each scaffold profile generates, as data."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 PIN_PACKAGES: dict[str, str] = {
@@ -66,35 +66,60 @@ SINGLE_HEADER = (
 
 ENV_EXAMPLE = FileSpec("common/env.example", ".env.example")
 
-BASE_FILES = (
+SINGLE_SHARED_FILES = (
     FileSpec("common/init.py", "src/__PACKAGE_NAME__/__init__.py"),
     FileSpec("base/test_smoke.py", "tests/test_smoke.py"),
-    FileSpec("base/pyproject.append.toml", "pyproject.toml", mode="append"),
     FileSpec("base/editorconfig", ".editorconfig"),
-    FileSpec("base/gitattributes", ".gitattributes"),
     FileSpec("base/gitignore.append", ".gitignore", mode="append"),
     ENV_EXAMPLE,
     FileSpec("base/pre-commit-config.yaml", ".pre-commit-config.yaml"),
     FileSpec("scripts/base/check.py", "scripts/check.py"),
     FileSpec("scripts/base/fix.py", "scripts/fix.py"),
-    FileSpec("base/README.md", "README.md"),
     FileSpec("base/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
+)
+"""Files the single-layout profiles (``base``, ``desktop``) write identically."""
+
+SINGLE_UV_ADDS = (
+    UvAdd(dev=True, pins=DEV_PINS, message="Adding dev tooling..."),
+    UvAdd(dev=False, pins=RUNTIME_PINS, message="Adding runtime dependencies..."),
 )
 
 BASE = Profile(
     name="base",
     layout="single",
     header=SINGLE_HEADER,
-    uv_adds=(
-        UvAdd(dev=True, pins=DEV_PINS, message="Adding dev tooling..."),
-        UvAdd(dev=False, pins=RUNTIME_PINS, message="Adding runtime dependencies..."),
+    uv_adds=SINGLE_UV_ADDS,
+    files=(
+        *SINGLE_SHARED_FILES,
+        FileSpec("base/pyproject.append.toml", "pyproject.toml", mode="append"),
+        FileSpec("base/gitattributes", ".gitattributes"),
+        FileSpec("base/README.md", "README.md"),
     ),
-    files=BASE_FILES,
     npm_install=False,
     playwright=False,
     hooks="per_tool",
     fresh_paths=("pyproject.toml",),
     needs_node=False,
+)
+
+# Ported from new-project.ps1, whose pyproject.toml also omits __main__.py from
+# coverage and whose .gitattributes also pins *.ps1 to LF.
+DESKTOP = replace(
+    BASE,
+    name="desktop",
+    uv_adds=(*SINGLE_UV_ADDS, UvAdd(dev=False, pins=("PY_PYSIDE6",))),
+    files=(
+        *SINGLE_SHARED_FILES,
+        FileSpec("desktop/pyproject.append.toml", "pyproject.toml", mode="append"),
+        FileSpec("desktop/gitattributes", ".gitattributes"),
+        FileSpec("desktop/empty_init.py", "src/__PACKAGE_NAME__/ui/__init__.py"),
+        FileSpec("desktop/empty_init.py", "src/__PACKAGE_NAME__/models/__init__.py"),
+        FileSpec("desktop/empty_init.py", "src/__PACKAGE_NAME__/services/__init__.py"),
+        FileSpec("desktop/main_window.py", "src/__PACKAGE_NAME__/ui/main_window.py"),
+        FileSpec("desktop/__main__.py", "src/__PACKAGE_NAME__/__main__.py"),
+        FileSpec("desktop/test_desktop_smoke.py", "tests/test_desktop_smoke.py"),
+        FileSpec("desktop/README.md", "README.md"),
+    ),
 )
 
 SPLIT_FRESH_PATHS = ("backend", "frontend", "package.json", "pyproject.toml")
@@ -183,4 +208,4 @@ GAME = Profile(
     needs_node=True,
 )
 
-PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE, WEB, GAME)}
+PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE, DESKTOP, WEB, GAME)}
