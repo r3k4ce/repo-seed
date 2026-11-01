@@ -1,4 +1,4 @@
-from __PACKAGE_NAME___backend.main import health
+from __BACKEND_PACKAGE_NAME__.main import health
 
 
 def test_health() -> None:

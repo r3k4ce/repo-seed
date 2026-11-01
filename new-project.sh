@@ -115,6 +115,7 @@ read_template() {
 expand_text() {
   local text="$1"
   text="${text//__PROJECT_NAME__/$PROJECT_NAME}"
+  text="${text//__BACKEND_PACKAGE_NAME__/${PACKAGE_NAME}_backend}"
   text="${text//__PACKAGE_NAME__/$PACKAGE_NAME}"
   text="${text//__PYTHON_VERSION__/$PYTHON_VERSION}"
   text="${text//__GENERATOR_NAME__/$GENERATOR_NAME}"

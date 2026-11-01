@@ -134,6 +134,7 @@ function Expand-Template {
     param([Parameter(Mandatory)] [string]$Text)
 
     return $Text.Replace("__PROJECT_NAME__", $ProjectName).
+        Replace("__BACKEND_PACKAGE_NAME__", "${PackageName}_backend").
         Replace("__PACKAGE_NAME__", $PackageName).
         Replace("__PYTHON_VERSION__", $Python).
         Replace("__GENERATOR_NAME__", "new-project.ps1").

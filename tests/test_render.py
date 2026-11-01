@@ -1,8 +1,10 @@
+import re
 from pathlib import Path
 
 import pytest
 
 from reposeed.render import TemplateError, append_file, read_template, render, write_file
+from reposeed.versions import bundled_versions
 
 TEMPLATES = Path(__file__).resolve().parent.parent / "src" / "reposeed" / "templates"
 
@@ -16,10 +18,43 @@ def test_render_leaves_dunders_and_github_expressions() -> None:
     assert render(text, {}, source="t") == text
 
 
-def test_render_token_followed_by_underscore_text() -> None:
-    # Bash replaces the literal __PACKAGE_NAME__ inside __PACKAGE_NAME___backend.
-    text = "from __PACKAGE_NAME___backend.main import x"
-    assert render(text, {"PACKAGE_NAME": "demo"}, source="t") == "from demo_backend.main import x"
+@pytest.mark.parametrize(
+    "text",
+    [
+        "from __NOT_A_KEY___x import y",
+        "__FOO__BAR__",
+        "__FOO___x",
+    ],
+)
+def test_render_rejects_tokens_glued_to_more_text(text: str) -> None:
+    # A known key followed by more token text must not render to silent residue.
+    with pytest.raises(TemplateError):
+        render(text, {"FOO": "f"}, source="t")
+
+
+def _full_context() -> dict[str, str]:
+    context = {
+        "PROFILE": "web",
+        "PROJECT_NAME": "demo-app",
+        "PACKAGE_NAME": "demo_app",
+        "BACKEND_PACKAGE_NAME": "demo_app_backend",
+        "PYTHON_VERSION": "3.12",
+        "RUFF_TARGET": "py312",
+        "TYPE_MODE": "standard",
+    }
+    context.update({f"PIN_{key}": value for key, value in bundled_versions().items()})
+    return context
+
+
+@pytest.mark.parametrize(
+    "name",
+    sorted(
+        path.relative_to(TEMPLATES).as_posix() for path in TEMPLATES.rglob("*") if path.is_file()
+    ),
+)
+def test_every_template_renders_with_the_full_context(name: str) -> None:
+    rendered = render(read_template(name), _full_context(), source=name)
+    assert re.search(r"__[A-Z][A-Z0-9_]*__", rendered) is None
 
 
 def test_render_unknown_token_raises() -> None:

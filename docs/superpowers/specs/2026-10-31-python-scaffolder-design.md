@@ -145,14 +145,18 @@ A profile is data: a frozen dataclass `Profile` with
 - `name: str`
 - `layout: Literal["single", "split"]` — `single` is a uv project at the root
   (`base`, `desktop`); `split` is `backend/` + `frontend/` (`web`, `game`).
-- `runtime_pins: tuple[str, ...]` and `dev_pins: tuple[str, ...]` — `versions.env`
-  keys.
+- `header: str` — the first line printed; may contain placeholders (for example
+  `Creating __PROFILE__ project: __PROJECT_NAME__ (FastAPI backend, ...)`).
+- `uv_adds: tuple[UvAdd, ...]` — `uv add` calls in order, each
+  `UvAdd(dev: bool, pins: tuple[str, ...], message: str = "")`; `pins` are
+  `versions.env` keys and a non-empty `message` is printed before the call.
 - `files: tuple[FileSpec, ...]` — `FileSpec(template: str, dest: str,
   mode: Literal["write", "append"], when: Literal["always", "github_actions"])`.
   `dest` may contain placeholders (for example `src/__PACKAGE_NAME__/ui/`).
 - `npm_install: bool`, `playwright: bool`.
 - `hooks: Literal["per_tool", "pre_push"]`.
 - `fresh_paths: tuple[str, ...]` — paths that must not exist.
+- `needs_node: bool` — preflight `node`/`npm` and `NODE_MIN`.
 
 `PROFILES: dict[str, Profile]`. `create.py` contains no profile-specific
 branches; differences live in profile data and templates. Shared files are
@@ -160,7 +164,7 @@ listed once in a shared tuple that profiles include.
 
 ### Rendering (`render.py`)
 
-- Placeholders are `__UPPER_SNAKE__` tokens. Context keys: `PROJECT_NAME`,
+- Placeholders are `__UPPER_SNAKE__` tokens. Context keys: `PROFILE`, `PROJECT_NAME`,
   `PACKAGE_NAME`, `BACKEND_PACKAGE_NAME`, `PYTHON_VERSION`, `RUFF_TARGET`,
   `TYPE_MODE`, plus every `versions.env` key as `PIN_<KEY>`.
 - `render(text: str, context: Mapping[str, str]) -> str` replaces every known
@@ -188,9 +192,12 @@ listed once in a shared tuple that profiles include.
 
 1. Validate: refuse `cwd == home`; refuse existing `fresh_paths`.
 2. Preflight tools.
-3. `git init` unless `no_git`; warn and skip when git is missing.
-4. `uv init` (root for `single`, `backend` for `split`), `uv add --dev`,
-   `uv add` with pins from `versions.env`.
+3. `split` only: `git init` in the root unless `no_git`; warn and skip when git
+   is missing. `single` lets `uv init` create the repository (with
+   `--vcs none` under `no_git`).
+4. `uv init` (root for `single`; `backend` with `--vcs none` for `split`), then
+   each `uv_adds` entry in order (in the root or `backend/`) with pins from
+   `versions.env`.
 5. Render and write or append each `FileSpec` whose `when` applies.
 6. `npm install --no-audit --legacy-peer-deps` in `frontend/` when
    `npm_install`; `npm exec playwright install chromium` when `playwright`.

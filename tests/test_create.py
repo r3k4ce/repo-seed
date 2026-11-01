@@ -210,7 +210,14 @@ def test_web_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
 def test_web_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     project = _project(tmp_path)
     runner = _create(replace(WEB, no_git=True), project)
-    assert runner.calls == [call for call in WEB_CALLS if "git init" not in call][:-1]
+    assert runner.calls == [
+        "uv --version | .",
+        "node --version | .",
+        "uv init --package --name demo-app-backend --python 3.12 --vcs none backend | .",
+        "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
+        DEV_ADD.replace("| .", "| backend"),
+        "npm install --no-audit --legacy-peer-deps | frontend",
+    ]
     assert not (project / ".git").exists()
     assert capsys.readouterr().err == NO_HOOKS
 

@@ -1,4 +1,4 @@
-from __PACKAGE_NAME___backend.main import ScoreRequest, game_state, health, submit_score
+from __BACKEND_PACKAGE_NAME__.main import ScoreRequest, game_state, health, submit_score
 
 
 def test_health() -> None:

@@ -5,9 +5,7 @@ from collections.abc import Mapping
 from importlib.resources import files
 from pathlib import Path
 
-# Words joined by single underscores, so `__PACKAGE_NAME___backend` holds the
-# token `__PACKAGE_NAME__` followed by `_backend`, as Bash's literal replace sees it.
-_TOKEN = re.compile(r"__[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*__")
+_TOKEN = re.compile(r"__[A-Z][A-Z0-9_]*__")
 _SPACE = " \t\n\v\f\r"
 
 
