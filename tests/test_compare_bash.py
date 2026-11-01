@@ -58,6 +58,10 @@ def _scaffold(
         ["--profile", "web", "--no-git", "--no-install-hooks", "--no-github-actions"],
         ["--profile", "web", "--no-git"],
         ["--profile", "web", "--python", "3.13", "--type-mode", "strict"],
+        ["--profile", "game"],
+        ["--profile", "game", "--no-git", "--no-install-hooks", "--no-github-actions"],
+        ["--profile", "game", "--no-git"],
+        ["--profile", "game", "--python", "3.13", "--type-mode", "strict"],
     ],
     ids=[
         "base-defaults",
@@ -68,6 +72,10 @@ def _scaffold(
         "web-no-git-hooks-actions",
         "web-no-git-warns",
         "web-python-type-mode",
+        "game-defaults",
+        "game-no-git-hooks-actions",
+        "game-no-git-warns",
+        "game-python-type-mode",
     ],
 )
 def test_matches_bash(tmp_path: Path, options: list[str]) -> None:

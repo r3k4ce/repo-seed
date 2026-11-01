@@ -961,7 +961,7 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: frontend
         run: |
-          if node -e "process.exit(require('./package.json').scripts['test:e2e'] ? 0 : 1)"; then
+          if node -e "process.exit(require('\''./package.json'\'').scripts['\''test:e2e'\''] ? 0 : 1)"; then
             npx playwright install --with-deps chromium
           fi
 

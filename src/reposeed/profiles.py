@@ -144,4 +144,47 @@ WEB = Profile(
     needs_node=True,
 )
 
-PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE, WEB)}
+GAME = Profile(
+    name="game",
+    layout="split",
+    header=(
+        "Creating __PROFILE__ project: __PROJECT_NAME__ (FastAPI backend, Phaser game frontend)"
+    ),
+    uv_adds=WEB.uv_adds,
+    files=(
+        FileSpec("common/init.py", "backend/src/__BACKEND_PACKAGE_NAME__/__init__.py"),
+        FileSpec("game/backend_main.py", "backend/src/__BACKEND_PACKAGE_NAME__/main.py"),
+        FileSpec("game/test_game_api.py", "backend/tests/test_game_api.py"),
+        FileSpec("web/pyproject.append.toml", "backend/pyproject.toml", mode="append"),
+        FileSpec("game/package.json", "frontend/package.json"),
+        FileSpec("common/npmrc", "frontend/.npmrc"),
+        FileSpec("game/index.html", "frontend/index.html"),
+        FileSpec("common/tsconfig.json", "frontend/tsconfig.json"),
+        FileSpec("game/tsconfig.app.json", "frontend/tsconfig.app.json"),
+        FileSpec("common/tsconfig.node.json", "frontend/tsconfig.node.json"),
+        FileSpec("game/vite.config.ts", "frontend/vite.config.ts"),
+        FileSpec("game/eslint.config.js", "frontend/eslint.config.js"),
+        FileSpec("game/frontend_main.ts", "frontend/src/main.ts"),
+        FileSpec("game/scene.ts", "frontend/src/game/GameScene.ts"),
+        FileSpec("game/playwright.config.ts", "frontend/playwright.config.ts"),
+        FileSpec("game/game-smoke.spec.ts", "frontend/tests/game-smoke.spec.ts"),
+        FileSpec("common/vite-env.d.ts", "frontend/src/vite-env.d.ts"),
+        FileSpec("game/style.css", "frontend/src/style.css"),
+        FileSpec("web/editorconfig", ".editorconfig"),
+        FileSpec("web/gitattributes", ".gitattributes"),
+        FileSpec("web/gitignore.append", ".gitignore", mode="append"),
+        FileSpec("common/env.example", ".env.example"),
+        FileSpec("scripts/game/check.py", "scripts/check.py"),
+        FileSpec("scripts/game/fix.py", "scripts/fix.py"),
+        FileSpec("game/README.md", "README.md"),
+        FileSpec("web/pre-commit-config.yaml", ".pre-commit-config.yaml"),
+        FileSpec("game/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
+    ),
+    npm_install=True,
+    playwright=True,
+    hooks="pre_push",
+    fresh_paths=SPLIT_FRESH_PATHS,
+    needs_node=True,
+)
+
+PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE, WEB, GAME)}

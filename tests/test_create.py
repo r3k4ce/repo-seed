@@ -316,6 +316,102 @@ def test_playwright_installs_browser_after_npm(
     assert calls[npm + 1] == "npm exec playwright install chromium | frontend"
 
 
+GAME = replace(BASE, profile="game")
+PLAYWRIGHT_INSTALL = "npm exec playwright install chromium | frontend"
+
+
+def test_game_calls(tmp_path: Path) -> None:
+    calls = _create(GAME, _project(tmp_path)).calls
+    npm = WEB_CALLS.index("npm install --no-audit --legacy-peer-deps | frontend")
+    assert calls == [*WEB_CALLS[: npm + 1], PLAYWRIGHT_INSTALL, *WEB_CALLS[npm + 1 :]]
+
+
+def test_game_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _create(GAME, _project(tmp_path))
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Creating game project: demo-app (FastAPI backend, Phaser game frontend)\n"
+        "Installing pre-push hook...\n"
+        "\n"
+        "Done. Next: uv run scripts/check.py\n"
+    )
+    assert captured.err == ""
+
+
+def test_game_no_git_still_installs_browser(tmp_path: Path) -> None:
+    runner = _create(replace(GAME, no_git=True), _project(tmp_path))
+    assert runner.calls[-2:] == [
+        "npm install --no-audit --legacy-peer-deps | frontend",
+        PLAYWRIGHT_INSTALL,
+    ]
+
+
+def test_game_files(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    _create(GAME, project)
+    files = sorted(
+        path.relative_to(project).as_posix()
+        for path in project.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    )
+    assert files == [
+        ".editorconfig",
+        ".env.example",
+        ".gitattributes",
+        ".github/workflows/ci.yml",
+        ".gitignore",
+        ".pre-commit-config.yaml",
+        "README.md",
+        "backend/.python-version",
+        "backend/README.md",
+        "backend/pyproject.toml",
+        "backend/src/demo_app_backend/__init__.py",
+        "backend/src/demo_app_backend/main.py",
+        "backend/tests/test_game_api.py",
+        "frontend/.npmrc",
+        "frontend/eslint.config.js",
+        "frontend/index.html",
+        "frontend/package.json",
+        "frontend/playwright.config.ts",
+        "frontend/src/game/GameScene.ts",
+        "frontend/src/main.ts",
+        "frontend/src/style.css",
+        "frontend/src/vite-env.d.ts",
+        "frontend/tests/game-smoke.spec.ts",
+        "frontend/tsconfig.app.json",
+        "frontend/tsconfig.json",
+        "frontend/tsconfig.node.json",
+        "frontend/vite.config.ts",
+        "scripts/check.py",
+        "scripts/fix.py",
+    ]
+    package = (project / "frontend/package.json").read_text(encoding="utf-8")
+    assert '"name": "demo-app-frontend",' in package
+    assert '"phaser": "' in package
+    assert '"@playwright/test": "' in package
+    assert "__" not in package
+    assert '<script type="module" src="/src/main.ts"></script>' in (
+        project / "frontend/index.html"
+    ).read_text(encoding="utf-8")
+    assert (
+        (project / "backend/tests/test_game_api.py")
+        .read_text(encoding="utf-8")
+        .startswith("from demo_app_backend.main import ")
+    )
+    readme = (project / "README.md").read_text(encoding="utf-8")
+    assert (
+        "    pushd frontend >/dev/null; npm exec playwright install chromium; popd >/dev/null\n"
+        in readme
+    )
+    assert "uv run uvicorn demo_app_backend.main:app --reload" in readme
+    assert "Install Playwright Chromium" in (project / ".github/workflows/ci.yml").read_text(
+        encoding="utf-8"
+    )
+    assert (project / "scripts/check.py").read_text(encoding="utf-8") == read_template(
+        "scripts/game/check.py"
+    )
+
+
 def test_web_no_github_actions(tmp_path: Path) -> None:
     project = _project(tmp_path)
     _create(replace(WEB, no_github_actions=True), project)

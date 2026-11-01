@@ -1,0 +1,29 @@
+{
+  "name": "__PROJECT_NAME__-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=__PIN_NODE_MIN__"
+  },
+  "dependencies": {
+    "phaser": "__PIN_NPM_PHASER__"
+  },
+  "devDependencies": {
+    "@eslint/js": "__PIN_NPM_ESLINT_JS__",
+    "@playwright/test": "__PIN_NPM_PLAYWRIGHT_TEST__",
+    "eslint": "__PIN_NPM_ESLINT__",
+    "globals": "__PIN_NPM_GLOBALS__",
+    "typescript": "__PIN_NPM_TYPESCRIPT__",
+    "typescript-eslint": "__PIN_NPM_TYPESCRIPT_ESLINT__",
+    "vite": "__PIN_NPM_VITE__"
+  }
+}

@@ -1,0 +1,74 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked --dev
+
+      - name: Ruff format check
+        working-directory: backend
+        run: uv run --locked ruff format --check .
+
+      - name: Ruff lint
+        working-directory: backend
+        run: uv run --locked ruff check .
+
+      - name: Pyright
+        working-directory: backend
+        run: uv run --locked pyright
+
+      - name: Pytest
+        working-directory: backend
+        run: uv run --locked pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: |
+          if node -e "process.exit(require('./package.json').scripts['test:e2e'] ? 0 : 1)"; then
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Frontend test
+        working-directory: frontend
+        run: npm run test --if-present
+
+      - name: Frontend browser test
+        working-directory: frontend
+        run: npm run test:e2e --if-present
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
