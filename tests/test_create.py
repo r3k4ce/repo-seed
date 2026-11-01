@@ -404,9 +404,9 @@ def test_game_files(tmp_path: Path) -> None:
         in readme
     )
     assert "uv run uvicorn demo_app_backend.main:app --reload" in readme
-    assert "Install Playwright Chromium" in (project / ".github/workflows/ci.yml").read_text(
-        encoding="utf-8"
-    )
+    ci = (project / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "Install Playwright Chromium" in ci
+    assert "require('./package.json').scripts['test:e2e']" in ci
     assert (project / "scripts/check.py").read_text(encoding="utf-8") == read_template(
         "scripts/game/check.py"
     )
