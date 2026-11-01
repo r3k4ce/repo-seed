@@ -30,7 +30,7 @@ addopts = "-m 'not e2e'"
 line-length = 100
 target-version = "py310"
 # Templates contain __PLACEHOLDER__ names and are checked by tests/lint_script_templates.sh.
-extend-exclude = ["src/reposeed/templates"]
+extend-exclude = ["src/reposeed/templates", "docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PT", "RUF"]
