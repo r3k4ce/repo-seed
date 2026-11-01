@@ -69,13 +69,15 @@ def test_base_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None
 
 
 def test_base_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    runner = _create(replace(BASE, no_git=True), _project(tmp_path))
+    project = _project(tmp_path)
+    runner = _create(replace(BASE, no_git=True), project)
     assert runner.calls == [
         "uv --version | .",
         "uv init --package --name demo-app --python 3.12 --vcs none | .",
         DEV_ADD,
         "uv add python-dotenv==1.2.3 | .",
     ]
+    assert not (project / ".git").exists()
     captured = capsys.readouterr()
     assert captured.err == NO_HOOKS
     assert "Installing" not in captured.out
@@ -173,6 +175,156 @@ def test_missing_uv(tmp_path: Path) -> None:
     runner = FakeRunner(project, missing=["uv"])
     with pytest.raises(SetupError, match="uv was not found on PATH"):
         create(BASE, runner, project, tmp_path / "home")
+    assert runner.calls == []
+
+
+WEB = replace(BASE, profile="web")
+WEB_CALLS = [
+    "uv --version | .",
+    "node --version | .",
+    "git init | .",
+    "uv init --package --name demo-app-backend --python 3.12 --vcs none backend | .",
+    "uv add python-dotenv==1.2.3 fastapi==0.141.1 uvicorn==0.54.0 | backend",
+    DEV_ADD.replace("| .", "| backend"),
+    "npm install --no-audit --legacy-peer-deps | frontend",
+    "uv --project backend run pre-commit install --hook-type pre-push | .",
+]
+
+
+def test_web_calls(tmp_path: Path) -> None:
+    assert _create(WEB, _project(tmp_path)).calls == WEB_CALLS
+
+
+def test_web_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _create(WEB, _project(tmp_path))
+    captured = capsys.readouterr()
+    assert captured.out == (
+        "Creating web project: demo-app (FastAPI backend, React TypeScript frontend)\n"
+        "Installing pre-push hook...\n"
+        "\n"
+        "Done. Next: uv run scripts/check.py\n"
+    )
+    assert captured.err == ""
+
+
+def test_web_no_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    project = _project(tmp_path)
+    runner = _create(replace(WEB, no_git=True), project)
+    assert runner.calls == [call for call in WEB_CALLS if "git init" not in call][:-1]
+    assert not (project / ".git").exists()
+    assert capsys.readouterr().err == NO_HOOKS
+
+
+def test_web_missing_git(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    project = _project(tmp_path)
+    runner = FakeRunner(project, missing=["git"])
+    create(WEB, runner, project, tmp_path / "home")
+    assert not [call for call in runner.calls if call.startswith("git")]
+    assert capsys.readouterr().err == (
+        "Warning: git was not found on PATH. Skipping git init.\n" + NO_HOOKS
+    )
+
+
+def test_web_missing_node(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    runner = FakeRunner(project, missing=["node"])
+    with pytest.raises(SetupError, match="node and npm were not found on PATH"):
+        create(WEB, runner, project, tmp_path / "home")
+    assert runner.calls == ["uv --version | ."]
+
+
+def test_web_files(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    _create(replace(WEB, python="3.13", type_mode="strict"), project)
+    files = sorted(
+        path.relative_to(project).as_posix()
+        for path in project.rglob("*")
+        if path.is_file() and ".git" not in path.parts
+    )
+    assert files == [
+        ".editorconfig",
+        ".env.example",
+        ".gitattributes",
+        ".github/workflows/ci.yml",
+        ".gitignore",
+        ".pre-commit-config.yaml",
+        "README.md",
+        "backend/.python-version",
+        "backend/README.md",
+        "backend/pyproject.toml",
+        "backend/src/demo_app_backend/__init__.py",
+        "backend/src/demo_app_backend/main.py",
+        "backend/tests/test_health.py",
+        "frontend/.npmrc",
+        "frontend/eslint.config.js",
+        "frontend/index.html",
+        "frontend/package.json",
+        "frontend/src/App.test.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/main.tsx",
+        "frontend/src/style.css",
+        "frontend/src/test/setup.ts",
+        "frontend/src/vite-env.d.ts",
+        "frontend/tsconfig.app.json",
+        "frontend/tsconfig.json",
+        "frontend/tsconfig.node.json",
+        "frontend/vite.config.ts",
+        "scripts/check.py",
+        "scripts/fix.py",
+    ]
+    pyproject = (project / "backend/pyproject.toml").read_text(encoding="utf-8")
+    assert pyproject.startswith('[project]\nname = "demo-app-backend"\n')
+    assert 'build-backend = "uv_build"\n[tool.ruff]\n' in pyproject
+    assert 'target-version = "py313"' in pyproject
+    assert 'typeCheckingMode = "strict"' in pyproject
+    assert 'pythonVersion = "3.13"' in pyproject
+    assert (project / ".gitignore").read_text(encoding="utf-8").startswith("# Python\n")
+    assert (
+        (project / "backend/tests/test_health.py")
+        .read_text(encoding="utf-8")
+        .startswith("from demo_app_backend.main import health\n")
+    )
+    package = (project / "frontend/package.json").read_text(encoding="utf-8")
+    assert '"name": "demo-app-frontend",' in package
+    assert '"node": ">=22.13.0"' in package
+    assert '"react": "19.3.0",' in package
+    assert '<script type="module" src="/src/main.tsx"></script>' in (
+        project / "frontend/index.html"
+    ).read_text(encoding="utf-8")
+    readme = (project / "README.md").read_text(encoding="utf-8")
+    assert "Backend source lives in backend/src/demo_app_backend/." in readme
+    assert "uv run uvicorn demo_app_backend.main:app --reload" in readme
+    assert "playwright" not in readme
+    assert (project / "scripts/check.py").read_text(encoding="utf-8") == read_template(
+        "scripts/web/check.py"
+    )
+
+
+def test_playwright_installs_browser_after_npm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(PROFILES, "web", replace(PROFILES["web"], playwright=True))
+    calls = _create(WEB, _project(tmp_path)).calls
+    npm = calls.index("npm install --no-audit --legacy-peer-deps | frontend")
+    assert calls[npm + 1] == "npm exec playwright install chromium | frontend"
+
+
+def test_web_no_github_actions(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    _create(replace(WEB, no_github_actions=True), project)
+    assert not (project / ".github").exists()
+
+
+@pytest.mark.parametrize("path", ["backend", "frontend", "package.json", "pyproject.toml"])
+def test_web_refuses_existing_path(tmp_path: Path, path: str) -> None:
+    project = _project(tmp_path)
+    (project / path).mkdir()
+    runner = FakeRunner(project)
+    with pytest.raises(SetupError) as info:
+        create(WEB, runner, project, tmp_path / "home")
+    assert str(info.value) == (
+        f"{path} already exists. Run this only in a fresh project directory."
+    )
     assert runner.calls == []
 
 

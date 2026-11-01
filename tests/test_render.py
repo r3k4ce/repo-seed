@@ -16,6 +16,12 @@ def test_render_leaves_dunders_and_github_expressions() -> None:
     assert render(text, {}, source="t") == text
 
 
+def test_render_token_followed_by_underscore_text() -> None:
+    # Bash replaces the literal __PACKAGE_NAME__ inside __PACKAGE_NAME___backend.
+    text = "from __PACKAGE_NAME___backend.main import x"
+    assert render(text, {"PACKAGE_NAME": "demo"}, source="t") == "from demo_backend.main import x"
+
+
 def test_render_unknown_token_raises() -> None:
     with pytest.raises(TemplateError) as info:
         render("x __NOT_A_KEY__ y", {"PROJECT_NAME": "x"}, source="t")

@@ -16,18 +16,33 @@ if TYPE_CHECKING:
 
 DONE = "Done. Next: uv run scripts/check.py"
 
+# Folders of the split layout, relative to the project root.
+BACKEND = "backend"
+FRONTEND = "frontend"
+
 # Message and commands (run from the project root) for each hook style.
-_HOOKS: dict[str, tuple[str, tuple[str, ...]]] = {
+_HOOKS: dict[str, tuple[str, tuple[tuple[str, ...], ...]]] = {
     "per_tool": (
         "Installing pre-commit and pre-push hooks...",
         (
-            "uv run pre-commit install",
-            "uv run pre-commit install --hook-type pre-push",
+            ("uv", "run", "pre-commit", "install"),
+            ("uv", "run", "pre-commit", "install", "--hook-type", "pre-push"),
         ),
     ),
     "pre_push": (
         "Installing pre-push hook...",
-        ("uv --project backend run pre-commit install --hook-type pre-push",),
+        (
+            (
+                "uv",
+                "--project",
+                BACKEND,
+                "run",
+                "pre-commit",
+                "install",
+                "--hook-type",
+                "pre-push",
+            ),
+        ),
     ),
 }
 
@@ -47,10 +62,11 @@ def _pin(versions: Mapping[str, str], key: str) -> str:
     return versions[key]
 
 
-def _context(options: "Options", versions: Mapping[str, str]) -> dict[str, str]:
+def _context(profile: Profile, options: "Options", versions: Mapping[str, str]) -> dict[str, str]:
     project = project_name(options.name)
     package = package_name(project)
     context = {
+        "PROFILE": profile.name,
         "PROJECT_NAME": project,
         "PACKAGE_NAME": package,
         "BACKEND_PACKAGE_NAME": f"{package}_backend",
@@ -102,7 +118,39 @@ def _install_hooks(profile: Profile, options: "Options", runner: Runner, root: P
     message, commands = _HOOKS[profile.hooks]
     _say(message)
     for command in commands:
-        runner.run(command.split(), root)
+        runner.run(command, root)
+
+
+def _python_dir(profile: Profile, root: Path) -> Path:
+    """Folder holding the uv project: the root, or ``backend/`` in the split layout."""
+    return root if profile.layout == "single" else root / BACKEND
+
+
+def _init_python(
+    profile: Profile, options: "Options", project: str, runner: Runner, root: Path
+) -> None:
+    init = ["uv", "init", "--package", "--name"]
+    if profile.layout == "single":
+        init += [project, "--python", options.python]
+        if options.no_git:
+            init += ["--vcs", "none"]
+    else:
+        # The repository is the root folder, so git is set up here, not by uv.
+        if not options.no_git:
+            if runner.which("git") is None:
+                _warn("git was not found on PATH. Skipping git init.")
+            else:
+                runner.run(["git", "init"], root)
+        init += [f"{project}-{BACKEND}", "--python", options.python, "--vcs", "none", BACKEND]
+    runner.run(init, root)
+
+
+def _install_frontend(profile: Profile, runner: Runner, root: Path) -> None:
+    frontend = root / FRONTEND
+    if profile.npm_install:
+        runner.run(["npm", "install", "--no-audit", "--legacy-peer-deps"], frontend)
+    if profile.playwright:
+        runner.run(["npm", "exec", "playwright", "install", "chromium"], frontend)
 
 
 def create(options: "Options", runner: Runner, cwd: Path, home: Path) -> None:
@@ -116,23 +164,17 @@ def create(options: "Options", runner: Runner, cwd: Path, home: Path) -> None:
     if profile.needs_node:
         require_node(runner, _pin(versions, "NODE_MIN"), profile.name)
 
-    context = _context(options, versions)
-    project, package = context["PROJECT_NAME"], context["PACKAGE_NAME"]
-    _say(
-        f"Creating Python project: {project} ({package}, Python {options.python}, "
-        f"pyright {options.type_mode}, profile {options.profile})"
-    )
+    context = _context(profile, options, versions)
+    _say(render(profile.header, context, source=f"{profile.name} header"))
 
-    init = ["uv", "init", "--package", "--name", project, "--python", options.python]
-    if options.no_git:
-        init += ["--vcs", "none"]
-    runner.run(init, cwd)
-
+    _init_python(profile, options, context["PROJECT_NAME"], runner, cwd)
+    python_dir = _python_dir(profile, cwd)
     for add in profile.uv_adds:
         if add.message:
             _say(add.message)
-        runner.run(_uv_add_command(add, versions), cwd)
+        runner.run(_uv_add_command(add, versions), python_dir)
 
     _write_files(profile, options, context, cwd)
+    _install_frontend(profile, runner, cwd)
     _install_hooks(profile, options, runner, cwd)
     _say(f"\n{DONE}")

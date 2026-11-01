@@ -1,0 +1,43 @@
+{
+  "name": "__PROJECT_NAME__-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=__PIN_NODE_MIN__"
+  },
+  "dependencies": {
+    "react": "__PIN_NPM_REACT__",
+    "react-dom": "__PIN_NPM_REACT_DOM__"
+  },
+  "devDependencies": {
+    "@eslint/js": "__PIN_NPM_ESLINT_JS__",
+    "@tailwindcss/vite": "__PIN_NPM_TAILWINDCSS_VITE__",
+    "@testing-library/dom": "__PIN_NPM_TESTING_LIBRARY_DOM__",
+    "@testing-library/jest-dom": "__PIN_NPM_TESTING_LIBRARY_JEST_DOM__",
+    "@testing-library/react": "__PIN_NPM_TESTING_LIBRARY_REACT__",
+    "@types/react": "__PIN_NPM_TYPES_REACT__",
+    "@types/react-dom": "__PIN_NPM_TYPES_REACT_DOM__",
+    "@vitejs/plugin-react": "__PIN_NPM_VITEJS_PLUGIN_REACT__",
+    "@vitest/coverage-v8": "__PIN_NPM_VITEST_COVERAGE_V8__",
+    "eslint": "__PIN_NPM_ESLINT__",
+    "eslint-plugin-react-hooks": "__PIN_NPM_ESLINT_PLUGIN_REACT_HOOKS__",
+    "eslint-plugin-react-refresh": "__PIN_NPM_ESLINT_PLUGIN_REACT_REFRESH__",
+    "globals": "__PIN_NPM_GLOBALS__",
+    "jsdom": "__PIN_NPM_JSDOM__",
+    "tailwindcss": "__PIN_NPM_TAILWINDCSS__",
+    "typescript": "__PIN_NPM_TYPESCRIPT__",
+    "typescript-eslint": "__PIN_NPM_TYPESCRIPT_ESLINT__",
+    "vite": "__PIN_NPM_VITE__",
+    "vitest": "__PIN_NPM_VITEST__"
+  }
+}

@@ -1,7 +1,7 @@
 """Fake external tools for create() tests.
 
 ``FakeRunner`` stands in for ``SubprocessRunner`` inside the test process.
-``fake_bin`` writes Bash scripts for ``uv``, ``npm`` and ``git`` so a real
+``fake_bin`` writes Bash scripts for ``uv``, ``node``, ``npm`` and ``git`` so a real
 scaffolder process (new-project.sh or ``python -m reposeed``) can run against
 them. Both record each command as ``"<command> | <cwd relative to the project>"``.
 """
@@ -185,6 +185,12 @@ __UV_GITIGNORE__GITIGNORE
 fi
 """
 
+_NODE_BODY = r"""
+if [[ "${1-}" == "--version" ]]; then
+  printf 'v99.0.0\n'
+fi
+"""
+
 _GIT_BODY = r"""
 if [[ "${1-}" == "init" ]]; then
   mkdir -p .git
@@ -193,13 +199,14 @@ fi
 
 
 def fake_bin(dir: Path, log: Path) -> Path:
-    """Write fake ``uv``, ``npm`` and ``git`` into ``dir`` that log to ``log``; return ``dir``.
+    """Write fake ``uv``, ``node``, ``npm`` and ``git`` into ``dir``, logging to ``log``.
 
     Each call appends ``<tool> <args> | <cwd>`` to ``log``, with ``cwd`` relative
     to ``$FAKE_PROJECT_ROOT`` (``.`` for the root).
     """
     bodies = {
         "uv": _UV_BODY.replace("__UV_GITIGNORE__", UV_GITIGNORE),
+        "node": _NODE_BODY,
         "npm": "",
         "git": _GIT_BODY,
     }

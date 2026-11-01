@@ -38,8 +38,15 @@ class UvAdd:
 
 @dataclass(frozen=True)
 class Profile:
+    """One scaffold profile.
+
+    ``layout`` is ``single`` (a uv project at the root) or ``split`` (``backend/``
+    and ``frontend/``). ``header`` is the first line printed and may hold placeholders.
+    """
+
     name: str
     layout: Literal["single", "split"]
+    header: str
     uv_adds: tuple[UvAdd, ...]
     files: tuple[FileSpec, ...]
     npm_install: bool
@@ -52,12 +59,17 @@ class Profile:
 DEV_PINS = ("PY_RUFF", "PY_PYTEST", "PY_PYTEST_COV", "PY_PYRIGHT", "PY_PRE_COMMIT")
 RUNTIME_PINS = ("PY_PYTHON_DOTENV",)
 
+SINGLE_HEADER = (
+    "Creating Python project: __PROJECT_NAME__ (__PACKAGE_NAME__, Python __PYTHON_VERSION__, "
+    "pyright __TYPE_MODE__, profile __PROFILE__)"
+)
+
 BASE_FILES = (
-    FileSpec("base/init.py", "src/__PACKAGE_NAME__/__init__.py"),
+    FileSpec("common/init.py", "src/__PACKAGE_NAME__/__init__.py"),
     FileSpec("base/test_smoke.py", "tests/test_smoke.py"),
     FileSpec("base/pyproject.append.toml", "pyproject.toml", mode="append"),
-    FileSpec("common/editorconfig", ".editorconfig"),
-    FileSpec("common/gitattributes", ".gitattributes"),
+    FileSpec("base/editorconfig", ".editorconfig"),
+    FileSpec("base/gitattributes", ".gitattributes"),
     FileSpec("base/gitignore.append", ".gitignore", mode="append"),
     FileSpec("common/env.example", ".env.example"),
     FileSpec("base/pre-commit-config.yaml", ".pre-commit-config.yaml"),
@@ -70,6 +82,7 @@ BASE_FILES = (
 BASE = Profile(
     name="base",
     layout="single",
+    header=SINGLE_HEADER,
     uv_adds=(
         UvAdd(dev=True, pins=DEV_PINS, message="Adding dev tooling..."),
         UvAdd(dev=False, pins=RUNTIME_PINS, message="Adding runtime dependencies..."),
@@ -82,4 +95,53 @@ BASE = Profile(
     needs_node=False,
 )
 
-PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE,)}
+SPLIT_FRESH_PATHS = ("backend", "frontend", "package.json", "pyproject.toml")
+
+WEB = Profile(
+    name="web",
+    layout="split",
+    header=(
+        "Creating __PROFILE__ project: __PROJECT_NAME__ "
+        "(FastAPI backend, React TypeScript frontend)"
+    ),
+    uv_adds=(
+        UvAdd(dev=False, pins=(*RUNTIME_PINS, "PY_FASTAPI", "PY_UVICORN")),
+        UvAdd(dev=True, pins=DEV_PINS),
+    ),
+    files=(
+        FileSpec("common/init.py", "backend/src/__BACKEND_PACKAGE_NAME__/__init__.py"),
+        FileSpec("web/backend_main.py", "backend/src/__BACKEND_PACKAGE_NAME__/main.py"),
+        FileSpec("web/test_health.py", "backend/tests/test_health.py"),
+        FileSpec("web/pyproject.append.toml", "backend/pyproject.toml", mode="append"),
+        FileSpec("web/package.json", "frontend/package.json"),
+        FileSpec("common/npmrc", "frontend/.npmrc"),
+        FileSpec("web/index.html", "frontend/index.html"),
+        FileSpec("common/tsconfig.json", "frontend/tsconfig.json"),
+        FileSpec("web/tsconfig.app.json", "frontend/tsconfig.app.json"),
+        FileSpec("common/tsconfig.node.json", "frontend/tsconfig.node.json"),
+        FileSpec("web/vite.config.ts", "frontend/vite.config.ts"),
+        FileSpec("web/eslint.config.js", "frontend/eslint.config.js"),
+        FileSpec("web/frontend_main.tsx", "frontend/src/main.tsx"),
+        FileSpec("web/App.tsx", "frontend/src/App.tsx"),
+        FileSpec("web/App.test.tsx", "frontend/src/App.test.tsx"),
+        FileSpec("web/test_setup.ts", "frontend/src/test/setup.ts"),
+        FileSpec("common/vite-env.d.ts", "frontend/src/vite-env.d.ts"),
+        FileSpec("web/style.css", "frontend/src/style.css"),
+        FileSpec("web/editorconfig", ".editorconfig"),
+        FileSpec("web/gitattributes", ".gitattributes"),
+        FileSpec("web/gitignore.append", ".gitignore", mode="append"),
+        FileSpec("common/env.example", ".env.example"),
+        FileSpec("scripts/web/check.py", "scripts/check.py"),
+        FileSpec("scripts/web/fix.py", "scripts/fix.py"),
+        FileSpec("web/README.md", "README.md"),
+        FileSpec("web/pre-commit-config.yaml", ".pre-commit-config.yaml"),
+        FileSpec("web/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
+    ),
+    npm_install=True,
+    playwright=False,
+    hooks="pre_push",
+    fresh_paths=SPLIT_FRESH_PATHS,
+    needs_node=True,
+)
+
+PROFILES: dict[str, Profile] = {profile.name: profile for profile in (BASE, WEB)}

@@ -54,10 +54,23 @@ def _scaffold(
         ["--no-git", "--no-install-hooks", "--no-github-actions"],
         ["--no-git"],
         ["--python", "3.13", "--type-mode", "strict"],
+        ["--profile", "web"],
+        ["--profile", "web", "--no-git", "--no-install-hooks", "--no-github-actions"],
+        ["--profile", "web", "--no-git"],
+        ["--profile", "web", "--python", "3.13", "--type-mode", "strict"],
     ],
-    ids=["defaults", "no-git-hooks-actions", "no-git-warns", "python-type-mode"],
+    ids=[
+        "base-defaults",
+        "base-no-git-hooks-actions",
+        "base-no-git-warns",
+        "base-python-type-mode",
+        "web-defaults",
+        "web-no-git-hooks-actions",
+        "web-no-git-warns",
+        "web-python-type-mode",
+    ],
 )
-def test_base_matches_bash(tmp_path: Path, options: list[str]) -> None:
+def test_matches_bash(tmp_path: Path, options: list[str]) -> None:
     log = tmp_path / "calls.log"
     bin_dir = fake_bin(tmp_path / "bin", log)
     args = ["--name", "demo-app", *options]
@@ -67,6 +80,7 @@ def test_base_matches_bash(tmp_path: Path, options: list[str]) -> None:
 
     bash_tree, bash_calls, bash_out, bash_err = bash
     python_tree, python_calls, python_out, python_err = python
+    assert bash_tree
     assert sorted(python_tree) == sorted(bash_tree)
     for path, content in bash_tree.items():
         assert python_tree[path] == content, path
