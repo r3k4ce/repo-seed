@@ -1,4 +1,5 @@
-"""Temporary: the Python desktop profile must reproduce new-project.ps1 byte for byte.
+"""Temporary: the Python desktop profile must reproduce new-project.ps1 byte for byte,
+except for the paths in ``DELIBERATE_DESKTOP_CHANGES``.
 
 Runs only where ``pwsh`` is installed on Linux (the fakes are Bash scripts), for
 example on ubuntu-latest CI runners. Deleted together with new-project.ps1.
@@ -13,6 +14,12 @@ import pytest
 from tests.fakes import fake_bin, scaffold
 
 ROOT = Path(__file__).resolve().parent.parent
+
+DELIBERATE_DESKTOP_CHANGES = frozenset({".github/workflows/ci.yml"})
+"""Paths where the desktop profile intentionally departs from new-project.ps1.
+
+The spec's deliberate change "install libegl1 in generated desktop CI" adds a step
+to ``.github/workflows/ci.yml``. Nothing else may differ."""
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "linux" or shutil.which("pwsh") is None,
@@ -78,6 +85,7 @@ def test_matches_powershell(
     assert powershell_tree
     assert sorted(python_tree) == sorted(powershell_tree)
     for path, content in powershell_tree.items():
-        assert python_tree[path] == content, path
+        if path not in DELIBERATE_DESKTOP_CHANGES:
+            assert python_tree[path] == content, path
     assert python_calls == powershell_calls
     assert powershell_calls[0] == "uv --version | ."

@@ -55,6 +55,11 @@ See the README for the current project description and usage.
   (`uv --directory backend ...`, `npm --prefix frontend ...`) instead of
   `pushd`/`popd`, so they work in PowerShell, Bash and every other shell.
 
+### Fixed
+
+- Generated `desktop` CI installs `libegl1` before syncing dependencies, so
+  PySide6 imports no longer fail on `ubuntu-latest`.
+
 ### Removed
 
 - Stale planning artifacts (`.superpowers/`, `docs/superpowers/`) and the

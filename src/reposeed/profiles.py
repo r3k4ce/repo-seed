@@ -75,9 +75,10 @@ SINGLE_SHARED_FILES = (
     FileSpec("base/pre-commit-config.yaml", ".pre-commit-config.yaml"),
     FileSpec("scripts/base/check.py", "scripts/check.py"),
     FileSpec("scripts/base/fix.py", "scripts/fix.py"),
-    FileSpec("base/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
 )
-"""Files the single-layout profiles (``base``, ``desktop``) write identically."""
+"""Files the single-layout profiles (``base``, ``desktop``) write identically.
+
+The CI workflow is not shared: ``desktop`` installs ``libegl1`` first."""
 
 SINGLE_UV_ADDS = (
     UvAdd(dev=True, pins=DEV_PINS, message="Adding dev tooling..."),
@@ -94,6 +95,7 @@ BASE = Profile(
         FileSpec("base/pyproject.append.toml", "pyproject.toml", mode="append"),
         FileSpec("base/gitattributes", ".gitattributes"),
         FileSpec("base/README.md", "README.md"),
+        FileSpec("base/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
     ),
     npm_install=False,
     playwright=False,
@@ -119,6 +121,7 @@ DESKTOP = replace(
         FileSpec("desktop/__main__.py", "src/__PACKAGE_NAME__/__main__.py"),
         FileSpec("desktop/test_desktop_smoke.py", "tests/test_desktop_smoke.py"),
         FileSpec("desktop/README.md", "README.md"),
+        FileSpec("desktop/ci.yml", ".github/workflows/ci.yml", when="github_actions"),
     ),
 )
 

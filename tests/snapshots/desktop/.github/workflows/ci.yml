@@ -19,6 +19,10 @@ jobs:
       - name: Install Python
         run: uv python install
 
+      # PySide6 imports libEGL at load time, which ubuntu-latest does not ship.
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1
+
       - name: Sync dependencies
         run: uv sync --locked --dev
 

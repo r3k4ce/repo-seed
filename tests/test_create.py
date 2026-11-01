@@ -456,7 +456,7 @@ def test_desktop_files(tmp_path: Path) -> None:
     desktop = _text_tree(desktop_project)
 
     assert sorted(desktop) == sorted([*base, *DESKTOP_PATHS])
-    # desktop (ported from new-project.ps1) differs from base in these two shared files.
+    # desktop (ported from new-project.ps1) differs from base in these shared files.
     expected = {
         **base,
         "README.md": base["README.md"]
@@ -474,8 +474,16 @@ def test_desktop_files(tmp_path: Path) -> None:
         ".gitattributes": base[".gitattributes"].replace(
             "*.txt text eol=lf\n", "*.txt text eol=lf\n*.ps1 text eol=lf\n"
         ),
+        ".github/workflows/ci.yml": base[".github/workflows/ci.yml"].replace(
+            "      - name: Sync dependencies\n",
+            "      # PySide6 imports libEGL at load time, which ubuntu-latest does not ship.\n"
+            "      - name: Install system libraries\n"
+            "        run: sudo apt-get update && sudo apt-get install -y libegl1\n"
+            "\n"
+            "      - name: Sync dependencies\n",
+        ),
     }
-    for path in ("README.md", "pyproject.toml", ".gitattributes"):
+    for path in ("README.md", "pyproject.toml", ".gitattributes", ".github/workflows/ci.yml"):
         assert expected[path] != base[path], path
     assert {path: desktop[path] for path in base} == expected
 
@@ -561,3 +569,12 @@ def test_readmes_are_shell_neutral(tmp_path: Path, name: str) -> None:
         assert "    npm --prefix frontend run dev\n" in readme
     if name == "game":
         assert "    npm --prefix frontend exec playwright install chromium\n" in readme
+
+
+def test_desktop_ci_installs_libegl1(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    _create(DESKTOP, project)
+    ci = (project / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    install = "sudo apt-get update && sudo apt-get install -y libegl1"
+    assert install in ci
+    assert ci.index(install) < ci.index("uv sync")
