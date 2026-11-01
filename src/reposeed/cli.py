@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from reposeed import __version__
+from reposeed.profiles import PROFILES
 from reposeed.render import TemplateError
 from reposeed.tools import CommandError, SetupError, SubprocessRunner
 from reposeed.versions import VersionsError
 
-PROFILES = ("base", "desktop", "web", "game")
 TYPE_MODES = ("off", "basic", "standard", "strict")
 
 
@@ -44,7 +44,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--profile",
-        choices=PROFILES,
+        choices=tuple(PROFILES),
         default="base",
         help="Scaffold profile. Defaults to base.",
     )

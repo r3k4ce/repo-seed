@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from reposeed.cli import PROFILES
+from reposeed.profiles import PROFILES
 
 pytestmark = pytest.mark.e2e
 
@@ -35,7 +35,7 @@ def _run(command: list[str], cwd: Path, env: dict[str, str]) -> None:
     assert completed.returncode == 0, f"{command} failed in {cwd}"
 
 
-@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("profile", list(PROFILES))
 def test_scaffold_checks_pass(profile: str, tmp_path: Path) -> None:
     if profile == "game" and os.environ.get("REPOSEED_E2E_GAME") != "1":
         pytest.skip("set REPOSEED_E2E_GAME=1 to run the game e2e")

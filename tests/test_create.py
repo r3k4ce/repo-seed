@@ -598,15 +598,6 @@ def test_web_refuses_existing_path(tmp_path: Path, path: str) -> None:
     assert runner.calls == []
 
 
-def test_unknown_profile(tmp_path: Path) -> None:
-    project = _project(tmp_path)
-    runner = FakeRunner(project)
-    with pytest.raises(SetupError) as info:
-        create(replace(BASE, profile="nope"), runner, project, tmp_path / "home")
-    assert str(info.value) == "The nope profile is not available yet."
-    assert runner.calls == []
-
-
 def test_missing_pin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     versions = bundled_versions()
     del versions["PY_RUFF"]

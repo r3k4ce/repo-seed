@@ -9,8 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from reposeed.cli import PROFILES, parse_args
+from reposeed.cli import parse_args
 from reposeed.create import create
+from reposeed.profiles import PROFILES
 from tests.fakes import FakeRunner, tree
 
 SNAPSHOTS = Path(__file__).resolve().parent / "snapshots"
@@ -53,7 +54,7 @@ def _rewrite(folder: Path, files: dict[str, bytes]) -> None:
         target.write_bytes(content)
 
 
-@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("profile", list(PROFILES))
 def test_snapshot(profile: str, tmp_path: Path, request: pytest.FixtureRequest) -> None:
     actual = _generate(profile, tmp_path)
     folder = SNAPSHOTS / profile

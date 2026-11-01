@@ -175,9 +175,7 @@ def _install_frontend(profile: Profile, runner: Runner, root: Path) -> None:
 
 
 def create(options: "Options", runner: Runner, cwd: Path, home: Path) -> None:
-    profile = PROFILES.get(options.profile)
-    if profile is None:
-        raise SetupError(f"The {options.profile} profile is not available yet.")
+    profile = PROFILES[options.profile]
     _check_folder(profile, cwd, home)
     _check_names(profile, project_name(options.name))
 

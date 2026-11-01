@@ -5,6 +5,7 @@ import pytest
 
 import reposeed.create
 from reposeed.cli import Options, main, parse_args
+from reposeed.profiles import PROFILES
 from reposeed.render import TemplateError
 from reposeed.tools import CommandError, SetupError
 from reposeed.versions import VersionsError
@@ -46,7 +47,7 @@ def test_parse_args_all_options() -> None:
     assert options == Options("demo", "3.13", "strict", "desktop", True, True, True)
 
 
-@pytest.mark.parametrize("profile", ["base", "desktop", "web", "game"])
+@pytest.mark.parametrize("profile", list(PROFILES))
 def test_parse_args_profiles(profile: str) -> None:
     assert parse_args(["--profile", profile]).profile == profile
 
@@ -78,7 +79,9 @@ def test_help_flag(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as info:
         parse_args(["-h"])
     assert info.value.code == 0
-    assert "--no-github-actions" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "--no-github-actions" in out
+    assert "--profile {base,desktop,web,game}" in out
 
 
 def test_main_success(monkeypatch: pytest.MonkeyPatch) -> None:
