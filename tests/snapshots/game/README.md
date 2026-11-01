@@ -5,6 +5,7 @@
     uv --directory backend sync --dev
     npm --prefix frontend install
     npm --prefix frontend exec playwright install chromium
+
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
 Dependencies are pinned to exact versions. To upgrade one, change its version

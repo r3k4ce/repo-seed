@@ -79,6 +79,8 @@ See the README for the current project description and usage.
 - Ctrl-C and operating-system errors (a deleted working folder, a failed file
   write) no longer print a Python traceback. Ctrl-C exits with status 130;
   both print the "project folder is incomplete" hint once files may exist.
+- The generated `game` README has a blank line between the Playwright install
+  command and the `.env.example` note, so Markdown no longer runs them together.
 
 ### Removed
 
