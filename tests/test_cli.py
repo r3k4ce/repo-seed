@@ -52,7 +52,13 @@ def test_parse_args_profiles(profile: str) -> None:
 
 @pytest.mark.parametrize(
     "argv",
-    [["--profile", "nope"], ["--type-mode", "loose"], ["-Profile", "web"], ["--bogus"]],
+    [
+        ["--profile", "nope"],
+        ["--type-mode", "loose"],
+        ["-Profile", "web"],
+        ["--bogus"],
+        ["--prof", "web"],
+    ],
 )
 def test_parse_args_rejects_invalid(argv: list[str]) -> None:
     with pytest.raises(SystemExit) as info:

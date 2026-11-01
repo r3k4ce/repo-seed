@@ -29,6 +29,7 @@ class Options:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="reposeed",
+        allow_abbrev=False,
         description="Seed a clean, checked, agent-ready repo from the current directory.",
     )
     parser.add_argument("--name", help="Project name. Defaults to the current directory name.")
