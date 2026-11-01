@@ -106,7 +106,7 @@ add_text_file() {
 
 read_template() {
   local name="$1"
-  local path="$SCRIPT_ROOT/templates/$name"
+  local path="$RESOURCE_ROOT/templates/$name"
 
   [[ -f "$path" ]] || die "Missing template: $name"
   cat "$path"
@@ -136,7 +136,7 @@ write_template_file() {
 # Pinned versions live in versions.env next to this script. Every value is
 # loaded into a V_<KEY> shell variable; version_of KEY reads one back.
 load_versions() {
-  local path="$SCRIPT_ROOT/versions.env"
+  local path="$RESOURCE_ROOT/versions.env"
   local line
 
   [[ -f "$path" ]] || die "Missing versions.env next to $GENERATOR_NAME."
@@ -1257,6 +1257,13 @@ Source code lives in src/$PACKAGE_NAME/. Tests live in tests/.
 
 main() {
   SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+  # Resources live in src/reposeed in a checkout and next to the script in an
+  # installed payload.
+  if [[ -d "$SCRIPT_ROOT/src/reposeed" ]]; then
+    RESOURCE_ROOT="$SCRIPT_ROOT/src/reposeed"
+  else
+    RESOURCE_ROOT="$SCRIPT_ROOT"
+  fi
   PROJECT_ROOT="$(pwd -P)"
   HOME_ROOT="$(cd "$HOME" && pwd -P)"
 

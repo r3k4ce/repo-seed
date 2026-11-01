@@ -116,10 +116,17 @@ function Add-TextFile {
     }
 }
 
+# Resources live in src/reposeed in a checkout and next to the script in an
+# installed payload.
+$ResourceRoot = Join-Path $PSScriptRoot "src/reposeed"
+if (-not (Test-Path -LiteralPath $ResourceRoot -PathType Container)) {
+    $ResourceRoot = $PSScriptRoot
+}
+
 function Read-Template {
     param([Parameter(Mandatory)] [string]$Name)
 
-    $path = Join-Path (Join-Path $PSScriptRoot "templates") $Name
+    $path = Join-Path (Join-Path $ResourceRoot "templates") $Name
     return Get-Content -Raw -LiteralPath $path
 }
 
@@ -160,7 +167,7 @@ function Invoke-Checked {
 # Pinned versions live in versions.env next to this script. Both scaffolders
 # read the same file, so a version is only ever changed in one place.
 function Read-Versions {
-    $path = Join-Path $PSScriptRoot "versions.env"
+    $path = Join-Path $ResourceRoot "versions.env"
 
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         Stop-WithMessage "Missing versions.env next to new-project.ps1."

@@ -34,8 +34,8 @@ assert_project_scripts() {
   local task leftover
 
   for task in check fix; do
-    cmp -s "$ROOT/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
-      printf 'Expected %s/scripts/%s.py to equal templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
+    cmp -s "$ROOT/src/reposeed/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
+      printf 'Expected %s/scripts/%s.py to equal src/reposeed/templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
       exit 1
     }
   done
@@ -257,14 +257,14 @@ run_bash_web_and_game_install_contract() {
   assert_project_scripts web "$project_dir"
   assert_file_contains "$project_dir/.pre-commit-config.yaml" 'entry: uv run scripts/check.py'
   local vitest_version coverage_version dom_version
-  dom_version="$(sed -nE 's/^NPM_TESTING_LIBRARY_DOM=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
+  dom_version="$(sed -nE 's/^NPM_TESTING_LIBRARY_DOM=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/src/reposeed/versions.env" | head -n1)"
   [[ -n "$dom_version" ]] || {
     printf 'versions.env is missing NPM_TESTING_LIBRARY_DOM\n' >&2
     exit 1
   }
   assert_file_contains "$project_dir/frontend/package.json" "\"@testing-library/dom\": \"$dom_version\""
-  vitest_version="$(sed -nE 's/^NPM_VITEST=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
-  coverage_version="$(sed -nE 's/^NPM_VITEST_COVERAGE_V8=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/versions.env" | head -n1)"
+  vitest_version="$(sed -nE 's/^NPM_VITEST=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/src/reposeed/versions.env" | head -n1)"
+  coverage_version="$(sed -nE 's/^NPM_VITEST_COVERAGE_V8=([A-Za-z0-9.+-]+)[[:space:]]*$/\1/p' "$ROOT/src/reposeed/versions.env" | head -n1)"
   [[ -n "$vitest_version" && -n "$coverage_version" ]] || {
     printf 'versions.env is missing NPM_VITEST or NPM_VITEST_COVERAGE_V8\n' >&2
     exit 1

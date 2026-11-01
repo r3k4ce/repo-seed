@@ -84,8 +84,8 @@ function Copy-Payload {
     New-Item -ItemType Directory -Path $PayloadPath -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $RepoRoot "new-project.sh") -Destination (Join-Path $PayloadPath "new-project.sh") -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot "new-project.ps1") -Destination (Join-Path $PayloadPath "new-project.ps1") -Force
-    Copy-Item -LiteralPath (Join-Path $RepoRoot "templates") -Destination (Join-Path $PayloadPath "templates") -Recurse -Force
-    Copy-Item -LiteralPath (Join-Path $RepoRoot "versions.env") -Destination (Join-Path $PayloadPath "versions.env") -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot "src/reposeed/templates") -Destination (Join-Path $PayloadPath "templates") -Recurse -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot "src/reposeed/versions.env") -Destination (Join-Path $PayloadPath "versions.env") -Force
     Set-Content -LiteralPath (Join-Path $PayloadPath ".reposeed-install") -Value @(
         "managed-by=RepoSeed"
         "installed-command=$Command"
@@ -160,11 +160,11 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "new-project.ps1"))) {
     Stop-WithMessage "Missing new-project.ps1 next to installer."
 }
 
-if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "templates") -PathType Container)) {
+if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "src/reposeed/templates") -PathType Container)) {
     Stop-WithMessage "Missing templates directory next to installer."
 }
 
-if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "versions.env") -PathType Leaf)) {
+if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "src/reposeed/versions.env") -PathType Leaf)) {
     Stop-WithMessage "Missing versions.env next to installer."
 }
 

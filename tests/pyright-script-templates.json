@@ -1,5 +1,5 @@
 {
-  "include": ["../templates/scripts"],
+  "include": ["../src/reposeed/templates/scripts"],
   "typeCheckingMode": "strict",
   "pythonVersion": "3.10"
 }

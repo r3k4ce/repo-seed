@@ -1,0 +1,42 @@
+[project]
+name = "reposeed"
+version = "0.2.0"
+description = "Scaffold new Python, desktop, web and game projects with exact, tested tool versions."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+reposeed = "reposeed.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.16.9",
+    "pyright==1.1.414",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["e2e: real-tool scaffolds (slow)"]
+addopts = "-m 'not e2e'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# Templates contain __PLACEHOLDER__ names and are checked by tests/lint_script_templates.sh.
+extend-exclude = ["src/reposeed/templates"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PT", "RUF"]
+
+[tool.pyright]
+include = ["src"]
+exclude = ["src/reposeed/templates"]
+typeCheckingMode = "strict"
+pythonVersion = "3.10"

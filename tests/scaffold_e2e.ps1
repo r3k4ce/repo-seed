@@ -26,7 +26,7 @@ function Assert-NotContains {
 
 # Reads one KEY from versions.env so assertions follow the manifest instead of
 # hard-coding version numbers that would drift.
-$VersionsPath = Join-Path $PSScriptRoot "..\versions.env"
+$VersionsPath = Join-Path $PSScriptRoot "..\src\reposeed\versions.env"
 function Get-Pinned {
     param([Parameter(Mandatory)] [string]$Key)
 
@@ -58,7 +58,7 @@ function Assert-ProjectScripts {
     )
 
     foreach ($task in @("check", "fix")) {
-        $template = Join-Path $PSScriptRoot "../templates/scripts/$ProfileName/$task.py"
+        $template = Join-Path $PSScriptRoot "../src/reposeed/templates/scripts/$ProfileName/$task.py"
         $generated = Join-Path $ProjectDir "scripts/$task.py"
         if (-not (Test-Path -LiteralPath $generated)) {
             throw "Expected generated script: $generated"
@@ -66,7 +66,7 @@ function Assert-ProjectScripts {
         $expectedBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $template))
         $actualBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $generated))
         if ([System.Convert]::ToBase64String($expectedBytes) -ne [System.Convert]::ToBase64String($actualBytes)) {
-            throw "Expected $generated to equal templates/scripts/$ProfileName/$task.py"
+            throw "Expected $generated to equal src/reposeed/templates/scripts/$ProfileName/$task.py"
         }
     }
     foreach ($leftover in @("check.sh", "fix.sh", "check.ps1", "fix.ps1")) {

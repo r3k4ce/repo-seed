@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-TEMPLATES="$ROOT/templates/scripts"
+TEMPLATES="$ROOT/src/reposeed/templates/scripts"
 PROFILES=(base web game)
 TASKS=(check fix)
 
@@ -119,7 +119,7 @@ test_templates_check_out_with_lf() {
   local profile task eol
   for profile in "${PROFILES[@]}"; do
     for task in "${TASKS[@]}"; do
-      eol="$(git -C "$ROOT" check-attr eol -- "templates/scripts/$profile/$task.py")"
+      eol="$(git -C "$ROOT" check-attr eol -- "src/reposeed/templates/scripts/$profile/$task.py")"
       [[ "$eol" == *": eol: lf" ]] || fail "Expected eol=lf git attribute, got: $eol"
     done
   done

@@ -59,8 +59,8 @@ assert_project_scripts() {
   local task leftover
 
   for task in check fix; do
-    cmp -s "$ROOT/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
-      printf 'Expected %s/scripts/%s.py to equal templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
+    cmp -s "$ROOT/src/reposeed/templates/scripts/$profile/$task.py" "$project_dir/scripts/$task.py" || {
+      printf 'Expected %s/scripts/%s.py to equal src/reposeed/templates/scripts/%s/%s.py\n' "$project_dir" "$task" "$profile" "$task" >&2
       exit 1
     }
   done
@@ -91,7 +91,7 @@ pinned() {
   local key="$1"
   local value
 
-  value="$(sed -nE "s/^${key}=([A-Za-z0-9.+-]+)[[:space:]]*$/\\1/p" "$ROOT/versions.env" | head -n1)"
+  value="$(sed -nE "s/^${key}=([A-Za-z0-9.+-]+)[[:space:]]*$/\\1/p" "$ROOT/src/reposeed/versions.env" | head -n1)"
   if [[ -z "$value" ]]; then
     printf 'versions.env is missing %s\n' "$key" >&2
     exit 1
