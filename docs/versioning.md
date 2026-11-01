@@ -24,9 +24,9 @@ instead of asking a package registry what "latest" means today.
    generated CI runs `uv sync --locked` and `npm ci`, and `frontend/.npmrc`
    sets `save-exact=true` so later `npm install <pkg>` calls pin too.
 5. **CI re-scaffolds weekly.** The workflow in `.github/workflows/ci.yml`
-   runs on every push and on a weekly schedule, so a yanked package or a
-   registry-side change shows up as a red build before it costs you a
-   project start.
+   runs on pushes to `main` and `dev`, on pull requests and on a weekly
+   schedule, so a yanked package or a registry-side change shows up as a
+   red build before it costs you a project start.
 
 ## Why exact pins and not ranges
 

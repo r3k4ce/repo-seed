@@ -277,8 +277,9 @@ project. Three things make that hold:
   profile with real `uv` and `npm` installs and runs the generated checks. A
   pinned set is only accepted after it passes.
 - **Weekly CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the
-  tests on Linux and Windows on every push and on a weekly schedule, so upstream
-  drift is caught before it costs you a project start.
+  tests on Linux and Windows on pushes to `main` and `dev`, on pull requests and
+  on a weekly schedule, so upstream drift is caught before it costs you a
+  project start.
 
 To upgrade the pinned versions, edit `src/reposeed/versions.env`, regenerate the
 test snapshots, run the tests, and commit.

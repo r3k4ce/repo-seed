@@ -16,7 +16,10 @@ See the README for the current project description and usage.
   and an `engines.node` field.
 - Repository CI (`.github/workflows/ci.yml`) runs Ruff, Pyright, the unit,
   snapshot, wheel and script-template tests, and the scaffold e2e tests on
-  Linux and Windows, on every push and weekly, to catch upstream drift.
+  Linux and Windows, on pushes to `main` and `dev`, on pull requests and
+  weekly, to catch upstream drift. It also runs the installed `reposeed`
+  command on both OSes and the unit tests on Python 3.10, the oldest
+  supported version, on Linux.
 - `docs/versioning.md` describes the version policy and the bump procedure.
 - `reposeed --version` prints `reposeed <version>`.
 

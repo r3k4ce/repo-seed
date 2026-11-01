@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
   schedule:
     # Weekly drift check: scaffolds real projects against live registries so a
@@ -32,6 +32,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      # Builds the wheel and runs its real `reposeed` entry point (an .exe shim on Windows).
+      - name: Installed command
+        run: uvx --from . reposeed --version
+
       - name: Format check
         run: uv run ruff format --check .
 
@@ -43,6 +47,12 @@ jobs:
 
       - name: Unit, snapshot and wheel tests
         run: uv run pytest
+
+      # The oldest Python RepoSeed supports, in a throwaway environment so the
+      # steps below keep the project's own .venv.
+      - name: Unit tests on Python 3.10
+        if: runner.os == 'Linux'
+        run: uv run --locked --python 3.10 --isolated pytest
 
       - name: Install Qt system library
         if: runner.os == 'Linux'
