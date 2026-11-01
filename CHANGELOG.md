@@ -54,6 +54,10 @@ See the README for the current project description and usage.
 - The generated `web` and `game` READMEs use shell-neutral commands
   (`uv --directory backend ...`, `npm --prefix frontend ...`) instead of
   `pushd`/`popd`, so they work in PowerShell, Bash and every other shell.
+- `web` profile on Windows (`new-project.ps1`) now matches the bash scaffolder:
+  pinned frontend dependencies, Tailwind CSS, Vitest coverage gates, and a
+  required frontend typecheck. Generated web CI runs frontend test, typecheck,
+  lint, and build (no Playwright).
 
 ### Fixed
 
@@ -65,20 +69,10 @@ See the README for the current project description and usage.
 - Stale planning artifacts (`.superpowers/`, `docs/superpowers/`) and the
   README section about a hand-written `np` PowerShell alias, which the
   installer's `reposeed` command replaces.
-
-### Removed
-
 - Scaffolders no longer generate `AGENTS.md` in new projects, and the
   `templates/agents/` templates have been removed.
 - Scaffolders no longer generate `docs/project-memory.yaml` (or a `docs/`
   folder) in new projects, and generated READMEs no longer have a Docs section.
-
-### Changed
-
-- `web` profile on Windows (`new-project.ps1`) now matches the bash scaffolder:
-  pinned frontend dependencies, Tailwind CSS, Vitest coverage gates, and a
-  required frontend typecheck. Generated web CI runs frontend test, typecheck,
-  lint, and build (no Playwright).
 
 ## [v0.1.0] - 2026-06-30
 
