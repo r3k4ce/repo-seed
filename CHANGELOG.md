@@ -7,23 +7,38 @@ See the README for the current project description and usage.
 
 ### Added
 
-- `versions.env`: a single manifest of exact, tested versions for every
-  package the scaffolders install, plus minimum `uv` and Node.js versions.
-  Both `new-project.sh` and `new-project.ps1` read it; the installers ship it.
-- Preflight checks: the scaffolders now stop early with a clear message when
+- `versions.env` (now `src/reposeed/versions.env`): a single manifest of
+  exact, tested versions for every package RepoSeed installs, plus minimum
+  `uv` and Node.js versions.
+- Preflight checks: RepoSeed now stops early with a clear message when
   `uv` or Node.js is older than the minimum in `versions.env`.
 - Generated frontends get `frontend/.npmrc` (`save-exact`, `engine-strict`)
   and an `engines.node` field.
-- Repository CI (`.github/workflows/ci.yml`) runs shellcheck, the contract
-  tests, and the scaffold e2e tests on Linux and Windows, on every push and
-  weekly, to catch upstream drift.
+- Repository CI (`.github/workflows/ci.yml`) runs Ruff, Pyright, the unit,
+  snapshot, wheel and script-template tests, and the scaffold e2e tests on
+  Linux and Windows, on every push and weekly, to catch upstream drift.
 - `docs/versioning.md` describes the version policy and the bump procedure.
 
 ### Changed
 
+- **Breaking:** RepoSeed is a Python package, installed with
+  `uv tool install git+https://github.com/r3k4ce/repo-seed` or
+  `uv tool install --editable <checkout>`. `uv` is the only requirement.
+  The Bash scaffolder `new-project.sh` and the installers `install.sh` and
+  `install.ps1` are removed; delete `~/.local/bin/reposeed` and
+  `~/.local/share/reposeed` from the old installer before installing. The
+  PowerShell scaffolder `new-project.ps1` is no longer an entry point; it
+  stays in the repository for now only as a CI comparison reference.
+- **Breaking:** PowerShell-style options (`-Name`, `-Profile`, `-NoGit`, ...)
+  are gone; `reposeed` takes the same `--options` on every OS.
+- The `desktop` profile works on Linux (and every other OS), not only from
+  PowerShell.
+- The Bash and PowerShell test scripts under `tests/` are replaced by pytest;
+  the script-template contract and lint now run as part of `uv run pytest`,
+  `uv run ruff` and `uv run pyright`.
 - Generated projects now get `scripts/check.py` and `scripts/fix.py`, run
   with `uv run scripts/check.py`, instead of `check.sh`/`fix.sh` or
-  `check.ps1`/`fix.ps1`. Both scaffolders write identical scripts, so a
+  `check.ps1`/`fix.ps1`. The scripts are the same on every OS, so a
   project works on Linux and Windows. The `web`/`game` pre-push hook runs
   `uv run scripts/check.py`. Existing projects are not changed.
 - Python dependencies are added with exact `==` pins instead of "whatever is

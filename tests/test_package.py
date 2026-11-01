@@ -45,3 +45,9 @@ def test_dev_pins_match_versions_env() -> None:
     assert dev["pytest"] == env["PY_PYTEST"]
     assert dev["ruff"] == env["PY_RUFF"]
     assert dev["pyright"] == env["PY_PYRIGHT"]
+
+
+def test_old_entry_points_removed() -> None:
+    for name in ("new-project.sh", "install.sh", "install.ps1"):
+        assert not (ROOT / name).exists(), name
+    assert sorted((ROOT / "tests").glob("*.sh")) == []

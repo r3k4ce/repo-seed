@@ -7,16 +7,16 @@ instead of asking a package registry what "latest" means today.
 ## The rules
 
 1. **Every dependency RepoSeed installs is pinned to one exact version** in
-   [`versions.env`](../versions.env). Python packages are added with
+   [`versions.env`](../src/reposeed/versions.env). Python packages are added with
    `uv add name==version`; npm packages are written into `package.json`
-   without `^` or `~`. Both scaffolders read the same file, so there is no
+   without `^` or `~`. Every profile reads the same file, so there is no
    second copy of any version number to fall out of sync.
 2. **A pinned set is only accepted once it passed the tests.** The tests in
    `tests/` scaffold real projects and run their generated `check`/`fix`
    scripts. A version bump that breaks the generated project cannot be
    merged.
 3. **Tools on your machine are checked, not assumed.** `versions.env` also
-   holds the minimum `uv` and Node.js versions. The scaffolders refuse to
+   holds the minimum `uv` and Node.js versions. RepoSeed refuses to
    run with older tools and tell you what to update, instead of failing
    halfway through with a confusing error.
 4. **The generated project stays reproducible after you start working.**
@@ -49,28 +49,21 @@ checks, instead of debugging someone else's release on day one.
 
 ## How to bump versions
 
-1. Edit `versions.env`. Keep peer requirements in mind: `vitest` and
+1. Edit `src/reposeed/versions.env`. Keep peer requirements in mind: `vitest` and
    `@vitest/coverage-v8` must be the same version, `@vitejs/plugin-react`
    has a `vite` major it supports, and `typescript-eslint` sets the highest
    TypeScript it accepts. `npm view <pkg> peerDependencies` shows these.
    The bootstrap install uses `--legacy-peer-deps`, which does not install
    peers automatically, so any required peer (today `@testing-library/dom`
    for `@testing-library/react`) must be pinned in `versions.env` itself.
-2. Run the tests:
+2. Run the tests (the same commands on Linux and Windows):
 
    ```bash
-   bash tests/cross_platform_contract.sh
-   REPOSEED_E2E_GAME=1 bash tests/scaffold_e2e.sh
+   uv run pytest
+   REPOSEED_E2E_GAME=1 uv run pytest -m e2e
    ```
 
-   On Windows:
-
-   ```powershell
-   pwsh -NoProfile -File tests/powershell_web_contract.ps1
-   pwsh -NoProfile -File tests/scaffold_e2e.ps1
-   ```
-
-3. Commit `versions.env` with a short note in `CHANGELOG.md`.
+3. Commit `src/reposeed/versions.env` with a short note in `CHANGELOG.md`.
 
 Bumping the minimum tool versions (`UV_MIN`, `NODE_MIN`) follows the same
 steps. Raise `NODE_MIN` whenever a pinned npm package's `engines.node`
@@ -81,4 +74,4 @@ requires it.
 Generated projects are independent of RepoSeed after scaffolding. To upgrade
 a dependency there, change its version in `pyproject.toml` or
 `frontend/package.json`, then run `uv lock` or `npm install`, and run the
-checks (`./scripts/check.sh` or `.\scripts\check.ps1`).
+checks (`uv run scripts/check.py`).

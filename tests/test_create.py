@@ -459,7 +459,7 @@ def test_desktop_files(tmp_path: Path) -> None:
     desktop = _text_tree(desktop_project)
 
     assert sorted(desktop) == sorted([*base, *DESKTOP_PATHS])
-    # new-project.ps1 differs from new-project.sh in these two shared files.
+    # desktop (ported from new-project.ps1) differs from base in these two shared files.
     expected = {
         **base,
         "README.md": base["README.md"]

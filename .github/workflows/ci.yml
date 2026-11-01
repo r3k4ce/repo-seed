@@ -52,36 +52,3 @@ jobs:
         env:
           REPOSEED_E2E_GAME: "1"
         run: uv run pytest -m e2e
-
-      # Old scaffolders: these steps go away with new-project.sh and new-project.ps1.
-      - name: Lint shell scripts
-        if: runner.os == 'Linux'
-        run: shellcheck --severity=warning new-project.sh install.sh tests/*.sh
-
-      - name: Contract tests
-        if: runner.os == 'Linux'
-        run: bash tests/cross_platform_contract.sh
-
-      - name: Script template contract
-        if: runner.os == 'Linux'
-        run: bash tests/script_templates_contract.sh
-
-      - name: Script template lint
-        if: runner.os == 'Linux'
-        run: bash tests/lint_script_templates.sh
-
-      - name: Scaffold e2e, old Bash scaffolder (base, web, game)
-        if: runner.os == 'Linux'
-        env:
-          REPOSEED_E2E_GAME: "1"
-        run: bash tests/scaffold_e2e.sh
-
-      - name: PowerShell web contract (fake tools)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./tests/powershell_web_contract.ps1
-
-      - name: PowerShell web scaffold e2e
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./tests/scaffold_e2e.ps1

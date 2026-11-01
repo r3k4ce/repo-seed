@@ -1,21 +1,20 @@
 # RepoSeed
 
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)](#requirements)
-[![Shell](https://img.shields.io/badge/Shell-Bash%20%7C%20PowerShell-lightgrey?style=flat-square)](#requirements)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-lightgrey?style=flat-square)](#requirements)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Type](https://img.shields.io/badge/Type-Scaffolder-lightgrey?style=flat-square&logo=gitignoredotio&logoColor=black)](#why)
 
 > Seed a clean, checked, agent-ready repo from an empty folder.
 
-RepoSeed is a small Bash and PowerShell tool that turns an empty folder
+RepoSeed is a small Python command-line tool that turns an empty folder
 into a working project starter. It creates the folder layout, config files,
 tests, and scripts, then sets up git, hooks, and a GitHub Actions workflow
 so the first commit is already in a healthy state.
 
 It is for developers who keep starting the same kinds of small projects —
-Python packages, FastAPI backends, and small game or toy apps — and want a
-clean baseline with checks included every time. The PowerShell entrypoint
-also includes a desktop profile for PySide6 apps.
+Python packages, PySide6 desktop apps, FastAPI backends, and small game or
+toy apps — and want a clean baseline with checks included every time.
 
 ## Why
 
@@ -37,7 +36,7 @@ Early but usable. I use this for my own project starts.
 ## Profiles
 
 - **`base`** — uv-managed Python package with a `src/` layout, tests, checks, and CI.
-- **`desktop`** — PowerShell-only: `base` profile plus a PySide6 starter window under `src/<package>/ui/`.
+- **`desktop`** — `base` profile plus a PySide6 starter window under `src/<package>/ui/`.
 - **`web`** — FastAPI backend with a Vite + React + TypeScript frontend.
 - **`game`** — FastAPI backend with a Vite + TypeScript + Phaser frontend and a Playwright smoke test.
 
@@ -47,62 +46,44 @@ See [Usage](#usage) for the full option list.
 
 - **`uv`** for Python packaging and dependency management
 - **Ruff** for linting and formatting
-- **Pyright** for static type checking (mode configurable via `-TypeMode`)
+- **Pyright** for static type checking (mode configurable via `--type-mode`)
 - **pytest** with coverage (branch coverage, 80% fail-under)
 - **Cross-platform check/fix scripts** (`uv run scripts/check.py`, `uv run scripts/fix.py`) that work the same on Linux and Windows
 - **GitHub Actions** workflow at `.github/workflows/ci.yml`
 - **Pre-commit and pre-push hooks** via `pre-commit`
-- **Exact, tested dependency versions** from [`versions.env`](versions.env), so every
+- **Exact, tested dependency versions** from [`versions.env`](src/reposeed/versions.env), so every
   run produces the same project (see [Version policy](docs/versioning.md))
 
 ## Requirements
 
-RepoSeed v1 officially targets Linux with Bash and Windows with PowerShell 7+.
-The Bash script is distro-agnostic and prioritizes Ubuntu-compatible tooling.
-macOS is not an official target yet.
+RepoSeed officially targets Linux and Windows. macOS is not an official target yet.
 
-- **Bash** — required on Linux to run `install.sh` and `new-project.sh`.
-- **PowerShell 7+** — required on Windows to run `install.ps1` and `new-project.ps1`.
-
-Generated projects need neither shell: their `scripts/check.py` and `scripts/fix.py`
-run with `uv` on both platforms, whichever scaffolder created them.
-- **`uv`** — required for every profile. Install from https://docs.astral.sh/uv/.
+- **`uv`** — the only requirement to install and run RepoSeed, and required for
+  every profile. Install from https://docs.astral.sh/uv/. RepoSeed needs
+  Python 3.10+, which `uv` provides; it has no other dependencies.
 - **Node.js with `npm`** — required only for the `web` and `game` profiles. Install from https://nodejs.org/.
-- **`git`** — used to initialize a repository and install hooks. The script warns and skips `git init` if it is missing; pass `--no-git` or `-NoGit` to skip explicitly.
-- **Python** — any version `uv` can install; default is `3.12` (override with `--python` / `-Python`).
+- **`git`** — optional; used to initialize a repository and install hooks. RepoSeed warns and skips `git init` if it is missing; pass `--no-git` to skip explicitly.
+- **Python for the generated project** — any version `uv` can install; default is `3.12` (override with `--python`).
 
-The minimum `uv` and Node.js versions live in [`versions.env`](versions.env)
-(`UV_MIN`, `NODE_MIN`). The scaffolders check them before writing anything and
-stop with a clear message if a tool is too old.
+Generated projects need no particular shell: their `scripts/check.py` and
+`scripts/fix.py` run with `uv` on both platforms.
+
+The minimum `uv` and Node.js versions live in [`versions.env`](src/reposeed/versions.env)
+(`UV_MIN`, `NODE_MIN`). RepoSeed checks them before writing anything and
+stops with a clear message if a tool is too old.
 
 ## Quick start
 
-The shortest path from an empty folder to a checked, ready-to-commit project on Linux:
+The shortest path from an empty folder to a checked, ready-to-commit project.
+The commands are the same on Linux and Windows:
 
 ```bash
-# 1. Install the native command from this RepoSeed checkout
-./install.sh
+# 1. Install the reposeed command from GitHub
+uv tool install git+https://github.com/r3k4ce/repo-seed
 
 # 2. Create an empty project folder and enter it
-mkdir -p ~/Code/my-app
-cd ~/Code/my-app
-
-# 3. Run the scaffolder
-reposeed
-
-# 4. Run the generated checks
-uv run scripts/check.py
-```
-
-On Windows with PowerShell 7+:
-
-```powershell
-# 1. Install the native command from this RepoSeed checkout
-.\install.ps1
-
-# 2. Create an empty project folder and enter it
-New-Item -ItemType Directory -Path ~/Code/my-app -Force | Out-Null
-Set-Location ~/Code/my-app
+mkdir my-app
+cd my-app
 
 # 3. Run the scaffolder
 reposeed
@@ -112,17 +93,6 @@ uv run scripts/check.py
 ```
 
 Defaults to the `base` profile. See [Profiles](#profiles) for the available profiles and [Usage](#usage) for options.
-
-The installers warn if the command directory is not on your `PATH`; they do
-not edit PATH automatically. Use the direct script fallback if needed:
-
-```bash
-bash /path/to/RepoSeed/new-project.sh
-```
-
-```powershell
-& "C:\path\to\RepoSeed\new-project.ps1"
-```
 
 ## Demo
 
@@ -170,116 +140,61 @@ All checks passed!
 
 ## Usage
 
-Install the native command:
+### Install
+
+Install the `reposeed` command with `uv`, either from GitHub or from a local
+checkout of this repository:
 
 ```bash
-# Linux
-./install.sh
-reposeed --help
+uv tool install git+https://github.com/r3k4ce/repo-seed
+# or, from a checkout; the command then follows the checked-out branch
+uv tool install --editable /path/to/repo-seed
 ```
 
-```powershell
-# Windows
-.\install.ps1
-reposeed -?
-```
-
-The Linux default install is per-user and does not require `sudo`:
-
-- command wrapper: `~/.local/bin/reposeed`
-- managed files: `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`
-
-The Windows default install is per-user and does not require admin rights:
-
-- command shim: `%LOCALAPPDATA%\Microsoft\WindowsApps\reposeed.ps1`
-- managed files: `%LOCALAPPDATA%\RepoSeed`
-
-To update an existing install after updating this repository, run the installer
-again from the updated checkout:
+`uv` puts the command in its executable directory (`~/.local/bin` by default,
+on Windows too). If `reposeed` is not found afterwards, put that directory on
+your `PATH` and open a new terminal:
 
 ```bash
-git pull
-./install.sh
+uv tool update-shell
 ```
 
-```powershell
-git pull
-.\install.ps1
-```
+To update, run `uv tool upgrade reposeed` (a GitHub install) or `git pull` in
+the checkout (an editable install). To remove it, run `uv tool uninstall reposeed`.
 
-Reinstalling replaces the managed RepoSeed copy, including both scaffolders and
-`templates/`, so removed or renamed templates do not linger.
+**Upgrading from the old installer:** earlier versions were installed with
+`install.sh` or `install.ps1`, which no longer exist. Before running
+`uv tool install`, delete what they installed. On Linux, delete
+`~/.local/bin/reposeed` (uv does not overwrite a command it did not install)
+and `~/.local/share/reposeed`. On Windows, delete
+`%LOCALAPPDATA%\Microsoft\WindowsApps\reposeed.ps1` and `%LOCALAPPDATA%\RepoSeed`.
 
-Linux installer options:
+### Run
 
-* `--bin-dir`: directory for the command wrapper. Defaults to `~/.local/bin`.
-* `--data-dir`: directory for managed RepoSeed files. Defaults to `${XDG_DATA_HOME:-$HOME/.local/share}/reposeed`.
-* `--command`: command name to install. Defaults to `reposeed`.
-
-Run the installed Bash command from a project directory:
+Run `reposeed` from the empty project folder:
 
 ```bash
 reposeed
 reposeed --name my-app
+reposeed --profile desktop
 reposeed --profile web
 reposeed --profile game --python 3.13 --type-mode strict
 reposeed --no-git --no-install-hooks --no-github-actions
 ```
 
-Windows installer options:
-
-* `-BinDir`: directory for the command shim. Defaults to `%LOCALAPPDATA%\Microsoft\WindowsApps`.
-* `-DataDir`: directory for managed RepoSeed files. Defaults to `%LOCALAPPDATA%\RepoSeed`.
-* `-Command`: command name to install. Defaults to `reposeed`.
-
-Run the installed PowerShell command from a project directory:
-
-```powershell
-reposeed
-reposeed -Name my-app
-reposeed -Profile desktop
-reposeed -Profile web
-reposeed -Profile game -Python 3.13 -TypeMode strict
-reposeed -NoGit -NoInstallHooks -NoGitHubActions
-```
-
-You can also use the Bash script directly from this repository on Linux:
-
-```bash
-./new-project.sh
-./new-project.sh --name my-app
-./new-project.sh --profile web
-./new-project.sh --profile game --python 3.13 --type-mode strict
-./new-project.sh --no-git --no-install-hooks --no-github-actions
-```
-
-Bash options:
+Options (the same on every OS):
 
 * `--name`: project name. Defaults to the current directory name.
 * `--python`: Python version for `uv init`. Defaults to `3.12`.
 * `--type-mode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
-* `--profile`: scaffold profile. Bash supports `base`, `web`, and `game`. Defaults to `base`.
+* `--profile`: scaffold profile: `base`, `desktop`, `web`, or `game`. Defaults to `base`.
 * `--no-git`: skip git initialization.
 * `--no-install-hooks`: skip pre-commit and pre-push hook installation.
 * `--no-github-actions`: skip GitHub Actions workflow generation.
+* `--version`: print the RepoSeed version.
 
-You can also use the PowerShell script directly from this repository on Windows:
-
-```powershell
-.\new-project.ps1
-.\new-project.ps1 -Name my-app
-.\new-project.ps1 -Profile web
-```
-
-Options:
-
-* `-Name`: project name. Defaults to the current directory name.
-* `-Python`: Python version for `uv init`. Defaults to `3.12`.
-* `-TypeMode`: Pyright type checking mode. Valid values are `off`, `basic`, `standard`, and `strict`. Defaults to `standard`.
-* `-Profile`: scaffold profile. PowerShell supports `base`, `desktop`, `web`, and `game`. Defaults to `base`.
-* `-NoGit`: skip git initialization.
-* `-NoInstallHooks`: skip pre-commit and pre-push hook installation.
-* `-NoGitHubActions`: skip GitHub Actions workflow generation.
+`reposeed --help` lists them. PowerShell-style options such as `-Profile` are
+not accepted.
 
 ## Profile structures
 
@@ -355,30 +270,30 @@ Entrypoints: FastAPI app in `backend/src/<package>_backend/main.py`; Phaser scen
 The point of RepoSeed is that it works the same way every time you start a
 project. Three things make that hold:
 
-- **One version manifest.** Every package the scaffolders install is pinned to
-  an exact version in [`versions.env`](versions.env). Both scaffolders read it,
-  so a bump happens in one place and applies to Bash and PowerShell alike.
-- **Tests that scaffold real projects.** `tests/scaffold_e2e.sh` and
-  `tests/scaffold_e2e.ps1` create projects with real `uv` and `npm` installs and
-  run the generated checks. A pinned set is only accepted after it passes.
+- **One version manifest.** Every package RepoSeed installs is pinned to
+  an exact version in [`versions.env`](src/reposeed/versions.env), so a bump
+  happens in one place.
+- **Tests that scaffold real projects.** `tests/test_e2e.py` creates every
+  profile with real `uv` and `npm` installs and runs the generated checks. A
+  pinned set is only accepted after it passes.
 - **Weekly CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the
-  tests on every push and on a weekly schedule, so upstream drift is caught
-  before it costs you a project start.
+  tests on Linux and Windows on every push and on a weekly schedule, so upstream
+  drift is caught before it costs you a project start.
 
-To upgrade the pinned versions, edit `versions.env`, run the tests, and commit.
+To upgrade the pinned versions, edit `src/reposeed/versions.env`, run the tests, and commit.
 The full procedure is in [docs/versioning.md](docs/versioning.md).
 
-Run the tests locally:
+Run the tests locally from a checkout:
 
 ```bash
-bash tests/cross_platform_contract.sh
-REPOSEED_E2E_GAME=1 bash tests/scaffold_e2e.sh
+uv run pytest                                # unit, snapshot and wheel tests
+REPOSEED_E2E_GAME=1 uv run pytest -m e2e     # real scaffolds of every profile
+uv run ruff check . && uv run ruff format --check . && uv run pyright
 ```
 
-```powershell
-pwsh -NoProfile -File tests/powershell_web_contract.ps1
-pwsh -NoProfile -File tests/scaffold_e2e.ps1
-```
+`new-project.ps1` remains in the repository only temporarily, as a reference
+that CI compares the `desktop` profile against. It is not an entry point; use
+`reposeed`.
 
 ## Non-goals
 

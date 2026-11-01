@@ -29,15 +29,31 @@ addopts = "-m 'not e2e'"
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-# Templates contain __PLACEHOLDER__ names and are checked by tests/lint_script_templates.sh.
+# Templates contain __PLACEHOLDER__ names, except templates/scripts/, which is copied
+# verbatim and linted here with the same rules generated projects use.
 # Snapshots are generated projects with their own Ruff settings; they are compared, not linted.
-extend-exclude = ["src/reposeed/templates", "tests/snapshots", "docs"]
+extend-exclude = [
+    "src/reposeed/templates/base",
+    "src/reposeed/templates/common",
+    "src/reposeed/templates/desktop",
+    "src/reposeed/templates/game",
+    "src/reposeed/templates/web",
+    "tests/snapshots",
+    "docs",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "C4", "PT", "RUF"]
 
 [tool.pyright]
 include = ["src"]
-exclude = ["src/reposeed/templates"]
+# Same template exclusions as Ruff: templates/scripts/ is type-checked.
+exclude = [
+    "src/reposeed/templates/base",
+    "src/reposeed/templates/common",
+    "src/reposeed/templates/desktop",
+    "src/reposeed/templates/game",
+    "src/reposeed/templates/web",
+]
 typeCheckingMode = "strict"
 pythonVersion = "3.10"

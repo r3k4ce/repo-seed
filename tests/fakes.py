@@ -2,9 +2,10 @@
 
 ``FakeRunner`` stands in for ``SubprocessRunner`` inside the test process.
 ``fake_bin`` writes Bash scripts for ``uv``, ``node``, ``npm`` and ``git`` so a real
-scaffolder process (new-project.sh, new-project.ps1 or ``python -m reposeed``) can
-run against them, and ``scaffold`` runs one. Both record each command as
-``"<command> | <cwd relative to the project>"``.
+scaffolder process (new-project.ps1 or ``python -m reposeed``) can run against
+them, and ``scaffold`` runs one. Both record each command as
+``"<command> | <cwd relative to the project>"``. ``fake_bin`` and ``scaffold`` serve
+only tests/test_compare_powershell.py and go away with new-project.ps1.
 """
 
 import os
@@ -136,8 +137,8 @@ log_call() {
 log_call "$@"
 """
 
-# `uv init` as prepend_fake_uv in tests/cross_platform_contract.sh, plus the
-# `.git/` folder and `.gitignore` that a real `uv init` creates without `--vcs none`.
+# A minimal `uv init` (pyproject.toml and package `__init__.py`), plus the `.git/`
+# folder and `.gitignore` that a real `uv init` creates without `--vcs none`.
 _UV_BODY = r"""
 if [[ "${1-}" == "--version" ]]; then
   printf 'uv 99.0.0 (fake)\n'

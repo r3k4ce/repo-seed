@@ -55,7 +55,10 @@ def write_file(path: Path, text: str) -> None:
 
 
 def append_file(path: Path, text: str) -> None:
-    """Append ``text`` to ``path`` the way ``add_text_file`` in new-project.sh does."""
+    """Append ``text`` to ``path``, one newline after the existing content.
+
+    This matches what the old Bash scaffolder's ``add_text_file`` wrote.
+    """
     addition = _lf(text).lstrip("\n")
     if not path.is_file():
         write_file(path, addition)
