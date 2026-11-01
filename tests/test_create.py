@@ -300,7 +300,7 @@ def test_web_files(tmp_path: Path) -> None:
     ).read_text(encoding="utf-8")
     readme = (project / "README.md").read_text(encoding="utf-8")
     assert "Backend source lives in backend/src/demo_app_backend/." in readme
-    assert "uv run uvicorn demo_app_backend.main:app --reload" in readme
+    assert "uv --directory backend run uvicorn demo_app_backend.main:app --reload" in readme
     assert "playwright" not in readme
     assert (project / "scripts/check.py").read_text(encoding="utf-8") == read_template(
         "scripts/web/check.py"
@@ -399,11 +399,8 @@ def test_game_files(tmp_path: Path) -> None:
         .startswith("from demo_app_backend.main import ")
     )
     readme = (project / "README.md").read_text(encoding="utf-8")
-    assert (
-        "    pushd frontend >/dev/null; npm exec playwright install chromium; popd >/dev/null\n"
-        in readme
-    )
-    assert "uv run uvicorn demo_app_backend.main:app --reload" in readme
+    assert "    npm --prefix frontend exec playwright install chromium\n" in readme
+    assert "uv --directory backend run uvicorn demo_app_backend.main:app --reload" in readme
     ci = (project / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "Install Playwright Chromium" in ci
     assert "require('./package.json').scripts['test:e2e']" in ci
@@ -548,3 +545,19 @@ def test_profile_data_is_complete(name: str) -> None:
             assert key in versions
     for spec in profile.files:
         assert read_template(spec.template)
+
+
+@pytest.mark.parametrize("name", sorted(PROFILES))
+def test_readmes_are_shell_neutral(tmp_path: Path, name: str) -> None:
+    project = _project(tmp_path)
+    _create(replace(BASE, profile=name), project)
+    readme = (project / "README.md").read_text(encoding="utf-8")
+    for shell_specific in ("pushd", "popd", "Push-Location", "Pop-Location"):
+        assert shell_specific not in readme
+    if name in ("web", "game"):
+        assert (
+            "    uv --directory backend run uvicorn demo_app_backend.main:app --reload\n" in readme
+        )
+        assert "    npm --prefix frontend run dev\n" in readme
+    if name == "game":
+        assert "    npm --prefix frontend exec playwright install chromium\n" in readme

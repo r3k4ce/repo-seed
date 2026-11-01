@@ -51,6 +51,9 @@ See the README for the current project description and usage.
   'edgesOut')`) on the generated dependency tree; the flag avoids it. Because
   legacy mode skips peer auto-install, `@testing-library/dom` (a required peer
   of `@testing-library/react`) is now pinned explicitly in `versions.env`.
+- The generated `web` and `game` READMEs use shell-neutral commands
+  (`uv --directory backend ...`, `npm --prefix frontend ...`) instead of
+  `pushd`/`popd`, so they work in PowerShell, Bash and every other shell.
 
 ### Removed
 

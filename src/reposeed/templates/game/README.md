@@ -2,9 +2,9 @@
 
 ## Setup
 
-    pushd backend >/dev/null; uv sync --dev; popd >/dev/null
-    pushd frontend >/dev/null; npm install; popd >/dev/null
-    pushd frontend >/dev/null; npm exec playwright install chromium; popd >/dev/null
+    uv --directory backend sync --dev
+    npm --prefix frontend install
+    npm --prefix frontend exec playwright install chromium
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
 Dependencies are pinned to exact versions. To upgrade one, change its version
@@ -17,5 +17,5 @@ Backend source lives in backend/src/__BACKEND_PACKAGE_NAME__/. Frontend source l
 
     uv run scripts/check.py
     uv run scripts/fix.py
-    pushd backend >/dev/null; uv run uvicorn __BACKEND_PACKAGE_NAME__.main:app --reload; popd >/dev/null
-    pushd frontend >/dev/null; npm run dev; popd >/dev/null
+    uv --directory backend run uvicorn __BACKEND_PACKAGE_NAME__.main:app --reload
+    npm --prefix frontend run dev

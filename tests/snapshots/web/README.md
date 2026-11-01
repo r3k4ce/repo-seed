@@ -2,8 +2,8 @@
 
 ## Setup
 
-    pushd backend >/dev/null; uv sync --dev; popd >/dev/null
-    pushd frontend >/dev/null; npm install; popd >/dev/null
+    uv --directory backend sync --dev
+    npm --prefix frontend install
 
 Copy .env.example to .env only when real secrets are needed. Never commit .env.
 
@@ -17,5 +17,5 @@ Backend source lives in backend/src/demo_app_backend/. Frontend source lives in 
 
     uv run scripts/check.py
     uv run scripts/fix.py
-    pushd backend >/dev/null; uv run uvicorn demo_app_backend.main:app --reload; popd >/dev/null
-    pushd frontend >/dev/null; npm run dev; popd >/dev/null
+    uv --directory backend run uvicorn demo_app_backend.main:app --reload
+    npm --prefix frontend run dev
