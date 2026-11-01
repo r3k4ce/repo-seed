@@ -96,7 +96,8 @@ Defaults to the `base` profile. See [Profiles](#profiles) for the available prof
 
 ## Demo
 
-From an empty folder to a passing check run, in one terminal session.
+From an empty folder to a passing check run, in one terminal session. The
+output of `uv` and `pre-commit` is shortened to `...`.
 
 ```console
 $ mkdir -p ~/Code/demo-app
@@ -104,25 +105,41 @@ $ cd ~/Code/demo-app
 $ reposeed
 Creating Python project: demo-app (demo_app, Python 3.12, pyright standard, profile base)
 Initialized project `demo-app`
+Adding dev tooling...
+...
+Adding runtime dependencies...
+...
+Installing pre-commit and pre-push hooks...
+...
+pre-commit installed at .git/hooks/pre-commit
+pre-commit installed at .git/hooks/pre-push
+
 Done. Next: uv run scripts/check.py
 ```
 
+The new project, without `.git/` and `.venv/`:
+
 ```text
 .
-|-- README.md
-|-- pyproject.toml
-|-- .editorconfig
-|-- .env.example
-|-- .gitattributes
-|-- .gitignore
-|-- .pre-commit-config.yaml
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml
 |-- scripts/
 |   |-- check.py
 |   `-- fix.py
 |-- src/demo_app/
 |   `-- __init__.py
-`-- tests/
-    `-- test_smoke.py
+|-- tests/
+|   `-- test_smoke.py
+|-- .editorconfig
+|-- .env.example
+|-- .gitattributes
+|-- .gitignore
+|-- .pre-commit-config.yaml
+|-- .python-version
+|-- README.md
+|-- pyproject.toml
+`-- uv.lock
 ```
 
 ```console
@@ -135,7 +152,7 @@ All checks passed!
 0 errors, 0 warnings, 0 informations
 > uv run pytest
 ...
-1 passed in 0.05s
+============================== 1 passed in 0.04s ===============================
 ```
 
 ## Usage
